@@ -1,0 +1,11 @@
+node_modules/
+.wrangler/
+.dev.vars
+dist/
+*.log
+extension/icons/node_modules/
+extension/icons/*.js
+
+# 配置文件（包含敏感信息）
+extension/config.js
+wrangler.toml

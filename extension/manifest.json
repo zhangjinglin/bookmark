@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Bookmark Saver",
+  "version": "1.0.0",
+  "description": "一键保存当前页面到 Cloudflare Bookmark Worker",
+  "permissions": ["activeTab", "contextMenus"],
+  "action": {
+    "default_icon": "icons/icon.svg"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "48": "icons/icon.svg",
+    "128": "icons/icon.svg"
+  }
+}
