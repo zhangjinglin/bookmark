@@ -213,12 +213,11 @@
 
     // 删除书签
     async function deleteBookmark(id) {
-      if (!confirm('确定删除？')) return;
       try {
         await fetch(`${API_BASE}/api/bookmarks/${id}`, { method: 'DELETE' });
         loadBookmarks();
       } catch (err) {
-        alert('删除失败');
+        console.error('删除失败');
       }
     }
 
