@@ -4,16 +4,39 @@ export interface Env {
   BOOKMARKS: KVNamespace;
 }
 
+// CORS 头部
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+function jsonResponse(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+  });
+}
+
+// 安全解析 JSON 请求体，非法 JSON 返回 null
+async function parseJsonBody(request: Request): Promise<Record<string, any> | null> {
+  try {
+    const body = await request.json();
+    return body && typeof body === 'object' ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+// 从 KV 读取 JSON 数组，非法数据返回空数组
+async function readList(env: Env, key: string): Promise<any[]> {
+  const data = await env.BOOKMARKS.get(key, 'json');
+  return Array.isArray(data) ? data : [];
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-
-    // CORS 头部
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    };
 
     // 处理 OPTIONS 预检请求
     if (request.method === 'OPTIONS') {
@@ -27,32 +50,28 @@ export default {
       });
     }
 
-    // API 路由
+    // 健康检查
+    if (url.pathname === '/api/health') {
+      return jsonResponse({ status: 'ok', message: 'Worker is running' });
+    }
 
     // 获取所有分类
     if (url.pathname === '/api/categories' && request.method === 'GET') {
-      const data = await env.BOOKMARKS.get('categories', 'json');
-      const categories = data || [];
-      categories.sort((a: any, b: any) => a.order - b.order);
-      return new Response(JSON.stringify(categories), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      const categories = await readList(env, 'categories');
+      categories.sort((a, b) => a.order - b.order);
+      return jsonResponse(categories);
     }
 
     // 新建分类
     if (url.pathname === '/api/categories' && request.method === 'POST') {
-      const body = await request.json();
-      const { name } = body;
-      
+      const body = await parseJsonBody(request);
+      const name = body?.name;
+
       if (!name) {
-        return new Response(JSON.stringify({ error: 'Name is required' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        });
+        return jsonResponse({ error: 'Name is required' }, 400);
       }
 
-      const data = await env.BOOKMARKS.get('categories', 'json');
-      const categories = data || [];
+      const categories = await readList(env, 'categories');
       const newCategory = {
         id: crypto.randomUUID(),
         name,
@@ -62,105 +81,89 @@ export default {
       categories.push(newCategory);
       await env.BOOKMARKS.put('categories', JSON.stringify(categories));
 
-      return new Response(JSON.stringify(newCategory), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return jsonResponse(newCategory);
     }
 
     // 批量更新分类顺序
     if (url.pathname === '/api/categories/order' && request.method === 'PUT') {
-      const body = await request.json();
-      const { order } = body;
+      const body = await parseJsonBody(request);
+      const order = body?.order;
       if (!Array.isArray(order)) {
-        return new Response(JSON.stringify({ error: 'order must be an array' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        });
+        return jsonResponse({ error: 'order must be an array' }, 400);
       }
-      const data = await env.BOOKMARKS.get('categories', 'json');
-      const categories = data || [];
-      const categoryMap = new Map(categories.map((c: any) => [c.id, c]));
+      const categories = await readList(env, 'categories');
+      const categoryMap = new Map(categories.map((c) => [c.id, c]));
       order.forEach((id: string, index: number) => {
         const cat = categoryMap.get(id);
         if (cat) cat.order = index;
       });
       await env.BOOKMARKS.put('categories', JSON.stringify(categories));
-      return new Response(JSON.stringify(categories), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return jsonResponse(categories);
     }
 
     // 编辑分类
     const categoryMatch = url.pathname.match(/^\/api\/categories\/(.+)$/);
     if (categoryMatch && request.method === 'PUT') {
       const id = categoryMatch[1];
-      const body = await request.json();
+      const body = await parseJsonBody(request);
+      if (!body) {
+        return jsonResponse({ error: 'Invalid JSON body' }, 400);
+      }
       const { name, order } = body;
-      
-      const data = await env.BOOKMARKS.get('categories', 'json');
-      const categories = data || [];
-      const index = categories.findIndex((c: any) => c.id === id);
-      
+
+      const categories = await readList(env, 'categories');
+      const index = categories.findIndex((c) => c.id === id);
+
       if (index === -1) {
-        return new Response(JSON.stringify({ error: 'Category not found' }), {
-          status: 404,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        });
+        return jsonResponse({ error: 'Category not found' }, 404);
       }
 
       if (name !== undefined) categories[index].name = name;
       if (order !== undefined) categories[index].order = order;
-      
+
       await env.BOOKMARKS.put('categories', JSON.stringify(categories));
-      return new Response(JSON.stringify(categories[index]), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return jsonResponse(categories[index]);
     }
 
-    // 删除分类
+    // 删除分类（同时清理书签中对该分类的引用）
     if (categoryMatch && request.method === 'DELETE') {
       const id = categoryMatch[1];
-      const data = await env.BOOKMARKS.get('categories', 'json');
-      const categories = data || [];
-      const filtered = categories.filter((c: any) => c.id !== id);
+      const categories = await readList(env, 'categories');
+      const filtered = categories.filter((c) => c.id !== id);
       await env.BOOKMARKS.put('categories', JSON.stringify(filtered));
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
 
-    if (url.pathname === '/api/health') {
-      return new Response(
-        JSON.stringify({ status: 'ok', message: 'Worker is running' }),
-        {
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      const bookmarks = await readList(env, 'bookmarks');
+      let changed = false;
+      for (const b of bookmarks) {
+        if (Array.isArray(b.categoryIds) && b.categoryIds.includes(id)) {
+          b.categoryIds = b.categoryIds.filter((cid: string) => cid !== id);
+          changed = true;
         }
-      );
+      }
+      if (changed) {
+        await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
+      }
+
+      return jsonResponse({ success: true });
     }
 
     // 获取所有书签
     if (url.pathname === '/api/bookmarks' && request.method === 'GET') {
-      const data = await env.BOOKMARKS.get('bookmarks', 'json');
-      const bookmarks = data || [];
-      return new Response(JSON.stringify(bookmarks), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return jsonResponse(await readList(env, 'bookmarks'));
     }
 
     // 添加书签
     if (url.pathname === '/api/bookmarks' && request.method === 'POST') {
-      const body = await request.json();
-      const { url: bookmarkUrl, title, categoryIds = [] } = body;
-      
+      const body = await parseJsonBody(request);
+      const bookmarkUrl = body?.url;
+      const title = body?.title;
+      const categoryIds = Array.isArray(body?.categoryIds) ? body.categoryIds : [];
+
       if (!bookmarkUrl) {
-        return new Response(JSON.stringify({ error: 'URL is required' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        });
+        return jsonResponse({ error: 'URL is required' }, 400);
       }
 
-      const data = await env.BOOKMARKS.get('bookmarks', 'json');
-      const bookmarks = data || [];
+      const bookmarks = await readList(env, 'bookmarks');
       const newBookmark = {
         id: crypto.randomUUID(),
         url: bookmarkUrl,
@@ -171,48 +174,39 @@ export default {
       bookmarks.push(newBookmark);
       await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
 
-      return new Response(JSON.stringify(newBookmark), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return jsonResponse(newBookmark);
     }
 
     // 更新书签（修改分类归属）
-    const updateMatch = url.pathname.match(/^\/api\/bookmarks\/(.+)$/);
-    if (updateMatch && request.method === 'PUT') {
-      const id = updateMatch[1];
-      const body = await request.json();
+    const bookmarkMatch = url.pathname.match(/^\/api\/bookmarks\/(.+)$/);
+    if (bookmarkMatch && request.method === 'PUT') {
+      const id = bookmarkMatch[1];
+      const body = await parseJsonBody(request);
+      if (!body) {
+        return jsonResponse({ error: 'Invalid JSON body' }, 400);
+      }
       const { categoryIds } = body;
-      
-      const data = await env.BOOKMARKS.get('bookmarks', 'json');
-      const bookmarks = data || [];
-      const index = bookmarks.findIndex((b: any) => b.id === id);
-      
+
+      const bookmarks = await readList(env, 'bookmarks');
+      const index = bookmarks.findIndex((b) => b.id === id);
+
       if (index === -1) {
-        return new Response(JSON.stringify({ error: 'Bookmark not found' }), {
-          status: 404,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        });
+        return jsonResponse({ error: 'Bookmark not found' }, 404);
       }
 
       if (categoryIds !== undefined) bookmarks[index].categoryIds = categoryIds;
-      
+
       await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
-      return new Response(JSON.stringify(bookmarks[index]), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return jsonResponse(bookmarks[index]);
     }
 
     // 删除书签
-    const deleteMatch = url.pathname.match(/^\/api\/bookmarks\/(.+)$/);
-    if (deleteMatch && request.method === 'DELETE') {
-      const id = deleteMatch[1];
-      const data = await env.BOOKMARKS.get('bookmarks', 'json');
-      const bookmarks = data || [];
-      const filtered = bookmarks.filter((b: any) => b.id !== id);
+    if (bookmarkMatch && request.method === 'DELETE') {
+      const id = bookmarkMatch[1];
+      const bookmarks = await readList(env, 'bookmarks');
+      const filtered = bookmarks.filter((b) => b.id !== id);
       await env.BOOKMARKS.put('bookmarks', JSON.stringify(filtered));
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return jsonResponse({ success: true });
     }
 
     // 默认返回 404

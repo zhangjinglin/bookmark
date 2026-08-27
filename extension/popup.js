@@ -1,5 +1,6 @@
-// 配置（从 config.js 同步更新）
-const WORKER_URL = 'https://bookmark-worker.jiv.workers.dev';
+// 从 config.js 读取配置
+import config from './config.js';
+const WORKER_URL = config.WORKER_URL;
 
 // DOM 元素
 const pageTitle = document.getElementById('page-title');
