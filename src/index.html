@@ -175,132 +175,104 @@
       transform: scale(0.98) translateY(0);
     }
 
-    /* 标签页动画 */
-    .tab-item {
-      position: relative;
-      transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    /* 分类树 */
+    #category-tree {
+      min-height: 3rem;
+      padding-bottom: 0.5rem;
     }
 
-    .tab-item::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      width: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #8b5cf6, #3b82f6);
-      transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-      transform: translateX(-50%);
-    }
-
-    .tab-item:hover::after,
-    .tab-item.active::after {
-      width: 80%;
-    }
-
-    .tab-item.active {
-      color: #e2e8f0;
-      background: rgba(139, 92, 246, 0.1);
-    }
-
-    /* 悬浮卡片容器 */
-    .category-wrapper {
-      position: relative;
-      display: inline-flex;
-      margin-bottom: 0.5rem;
-    }
-
-    /* 悬浮卡片 */
-    .category-card {
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      transition: opacity 0.15s ease, visibility 0.15s ease;
-      z-index: 100;
-      min-width: 120px;
-      padding-top: 8px;
-    }
-
-    /* 卡片箭头 */
-    .category-card::before {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 50%;
-      transform: translateX(-50%) rotate(45deg);
-      width: 12px;
-      height: 12px;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-bottom: none;
-      border-right: none;
-    }
-
-    /* 卡片内容 */
-    .category-card-content {
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+    #category-tree.drag-over-root {
+      background: rgba(139, 92, 246, 0.05);
+      outline: 1px dashed rgba(139, 92, 246, 0.5);
+      outline-offset: -1px;
       border-radius: 0.75rem;
-      padding: 0.5rem;
-      box-shadow: 
-        0 20px 40px -10px rgba(0, 0, 0, 0.5),
-        inset 0 1px 1px rgba(255, 255, 255, 0.05);
     }
 
-    /* 卡片操作按钮 */
-    .category-card-actions {
-      display: flex;
-      gap: 0.375rem;
-    }
-
-    .category-card-btn {
+    .tree-node {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 0.375rem;
+      gap: 0.25rem;
       padding: 0.5rem 0.75rem;
-      border-radius: 0.5rem;
-      font-size: 0.75rem;
-      font-weight: 500;
+      margin-bottom: 2px;
+      border-radius: 0.75rem;
       cursor: pointer;
-      transition: all 0.2s ease;
+      color: #94a3b8;
+      font-size: 0.875rem;
+      transition: background 0.2s ease, color 0.2s ease;
+      user-select: none;
+    }
+
+    .tree-node:hover {
+      background: rgba(139, 92, 246, 0.08);
+      color: #e2e8f0;
+    }
+
+    .tree-node.active {
+      background: rgba(139, 92, 246, 0.12);
+      color: #fff;
+    }
+
+    .tree-node.dragging {
+      opacity: 0.5;
+    }
+
+    .tree-node.drag-over {
+      background: rgba(139, 92, 246, 0.1);
+      outline: 1px dashed rgba(139, 92, 246, 0.5);
+    }
+
+    .tree-node.drag-over-top {
+      box-shadow: 0 -2px 0 0 #8b5cf6;
+    }
+
+    .tree-node.drag-over-bottom {
+      box-shadow: 0 2px 0 0 #8b5cf6;
+    }
+
+    .tree-toggle {
+      width: 1rem;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 0.75rem;
+    }
+
+    .tree-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .category-card-btn svg {
-      width: 14px;
-      height: 14px;
+    .tree-node .category-count {
+      margin-left: auto;
+      flex-shrink: 0;
     }
 
-    .category-card-btn.edit {
+    /* 侧边栏新建按钮 */
+    .sidebar-add-btn {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 0.5rem;
+      border: none;
       background: rgba(139, 92, 246, 0.1);
       color: #8b5cf6;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
     }
 
-    .category-card-btn.edit:hover {
-      background: rgba(139, 92, 246, 0.2);
+    .sidebar-add-btn:hover {
+      background: rgba(139, 92, 246, 0.25);
     }
 
-    .category-card-btn.delete {
-      background: rgba(239, 68, 68, 0.1);
-      color: #ef4444;
-    }
-
-    .category-card-btn.delete:hover {
-      background: rgba(239, 68, 68, 0.2);
-    }
-
-    /* 紧凑标签样式 */
-    .tab-compact {
-      padding: 0.375rem 0.75rem;
-      font-size: 0.8125rem;
-      border-radius: 0.5rem;
+    .sidebar-add-btn svg {
+      width: 0.875rem;
+      height: 0.875rem;
     }
 
     /* 数量badge */
@@ -385,6 +357,15 @@
     .context-menu-item.active {
       color: #8b5cf6;
       font-weight: 500;
+    }
+
+    .context-menu-item.danger {
+      color: #ef4444;
+    }
+
+    .context-menu-item.danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
     }
 
     /* 模态框 */
@@ -483,12 +464,6 @@
             <p class="text-dark-300 text-sm mt-1">个人书签管理</p>
           </div>
         </div>
-        <button class="btn-magnetic flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-gradient-to-r from-accent-purple to-accent-blue text-white rounded-2xl hover:shadow-glow transition-all duration-300" onclick="openAddCategoryModal()">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-          </svg>
-          新建分类
-        </button>
       </div>
       
       <!-- 统计信息 -->
@@ -508,46 +483,59 @@
       </div>
     </header>
 
-    <!-- 分类标签栏 -->
-    <div class="mb-8 scroll-reveal" style="transition-delay: 0.1s; overflow: visible;">
-      <div class="double-bezel">
-        <div class="double-bezel-inner p-2">
-          <div class="flex flex-wrap items-center gap-2 pb-1" id="category-bar">
-            <span class="tab-item active px-5 py-2.5 text-sm font-medium cursor-pointer whitespace-nowrap rounded-xl" onclick="filterByCategory(null)">
-              全部
-            </span>
+    <!-- 主区域：左侧分类树 + 右侧书签列表 -->
+    <div class="flex flex-col md:flex-row gap-6 items-start">
+
+      <!-- 左侧分类树 -->
+      <aside class="w-full md:w-60 flex-shrink-0 scroll-reveal" style="transition-delay: 0.1s;">
+        <div class="double-bezel">
+          <div class="double-bezel-inner p-3">
+            <div class="flex items-center justify-between px-1 mb-2">
+              <span class="text-xs font-medium text-dark-400">分类</span>
+              <button class="sidebar-add-btn" onclick="openAddCategoryModal()" title="新建顶级分类">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+              </button>
+            </div>
+            <div id="category-tree" ondragover="handleRootDragOver(event)" ondragleave="handleRootDragLeave(event)" ondrop="handleRootDrop(event)">
+              <div class="tree-node active">
+                <span class="tree-toggle"></span>
+                <span class="tree-name">加载中...</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </aside>
 
-    <!-- 书签列表 -->
-    <div class="scroll-reveal" style="transition-delay: 0.2s;">
-      <div class="double-bezel">
-        <div class="double-bezel-inner p-4 md:p-6">
-          <ul class="space-y-3" id="bookmark-list">
-            <li class="py-12 text-center text-dark-400 text-sm">
-              <div class="flex flex-col items-center gap-3">
-                <div class="w-12 h-12 rounded-4xl bg-dark-800 flex items-center justify-center">
-                  <svg class="w-6 h-6 text-dark-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                  </svg>
+      <!-- 右侧书签列表 -->
+      <div class="flex-1 min-w-0 w-full scroll-reveal" style="transition-delay: 0.2s;">
+        <div class="double-bezel">
+          <div class="double-bezel-inner p-4 md:p-6">
+            <ul class="space-y-3" id="bookmark-list">
+              <li class="py-12 text-center text-dark-400 text-sm">
+                <div class="flex flex-col items-center gap-3">
+                  <div class="w-12 h-12 rounded-4xl bg-dark-800 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-dark-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                  </div>
+                  <span>加载中...</span>
                 </div>
-                <span>加载中...</span>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+              </li>
+            </ul>
 
-    <!-- 底部统计 -->
-    <div class="mt-6 text-right scroll-reveal" style="transition-delay: 0.3s;">
-      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass">
-        <svg class="w-4 h-4 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-        </svg>
-        <span id="bookmark-count" class="text-sm text-dark-300"></span>
+            <!-- 底部统计 -->
+            <div class="mt-6 text-right">
+              <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass">
+                <svg class="w-4 h-4 text-dark-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span id="bookmark-count" class="text-sm text-dark-300"></span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -558,6 +546,13 @@
       移动到分类
     </div>
     <div id="context-menu-categories"></div>
+  </div>
+
+  <!-- 分类右键菜单 -->
+  <div class="context-menu hidden" id="category-context-menu">
+    <div class="context-menu-item" onclick="openAddSubCategoryModal()">新建子分类</div>
+    <div class="context-menu-item" onclick="openRenameCategoryModal()">重命名</div>
+    <div class="context-menu-item danger" onclick="deleteCategoryFromMenu()">删除</div>
   </div>
 
   <!-- 分类编辑模态框 -->
@@ -589,7 +584,7 @@
   <script>
     const API_BASE = window.location.origin;
     const listEl = document.getElementById('bookmark-list');
-    const categoryBar = document.getElementById('category-bar');
+    const treeEl = document.getElementById('category-tree');
     const modal = document.getElementById('category-modal');
     const categoryNameInput = document.getElementById('category-name-input');
     const modalTitle = document.getElementById('modal-title');
@@ -598,10 +593,14 @@
     let categories = [];
     let currentCategoryId = null;
     let editingCategoryId = null;
+    let newCategoryParentId = null;
     let bookmarks = [];
 
     // 特殊标识：无分类筛选
     const NO_CATEGORY = '__none__';
+
+    // 折叠的分类 id（持久化到 localStorage）
+    let collapsedCategories = new Set(JSON.parse(localStorage.getItem('collapsedCategories') || '[]'));
 
     // HTML 转义，防止 XSS
     function escapeHtml(value) {
@@ -625,14 +624,44 @@
       try {
         const res = await fetch(`${API_BASE}/api/categories`);
         categories = await res.json();
-        renderCategories();
+        renderCategoryTree();
         updateStats();
       } catch (err) {
         console.error('加载分类失败:', err);
       }
     }
 
-    // 统计每个分类的书签数量
+    // 按父级分组构建树索引
+    function buildCategoryTree() {
+      const byParent = new Map();
+      for (const c of categories) {
+        const pid = c.parentId || null;
+        if (!byParent.has(pid)) byParent.set(pid, []);
+        byParent.get(pid).push(c);
+      }
+      for (const list of byParent.values()) {
+        list.sort((a, b) => (a.order || 0) - (b.order || 0));
+      }
+      return byParent;
+    }
+
+    // 获取某分类的所有后代 id
+    function getDescendantIds(id) {
+      const result = [];
+      const stack = [id];
+      while (stack.length > 0) {
+        const cur = stack.pop();
+        for (const c of categories) {
+          if ((c.parentId || null) === cur) {
+            result.push(c.id);
+            stack.push(c.id);
+          }
+        }
+      }
+      return result;
+    }
+
+    // 统计每个分类的书签数量（仅当前分类，不含子分类）
     function getCategoryCount(categoryId) {
       if (categoryId === null) return bookmarks.length;
       if (categoryId === NO_CATEGORY) {
@@ -641,109 +670,77 @@
       return bookmarks.filter(b => b.categoryIds && b.categoryIds.includes(categoryId)).length;
     }
 
-    // 渲染分类标签
-    function renderCategories() {
-      // 构建"全部"标签
-      var allActiveClass = currentCategoryId === null ? 'active' : '';
-      var allTag = '<span class="tab-item tab-compact ' + allActiveClass + ' cursor-pointer whitespace-nowrap" ' +
-        'onclick="filterByCategory(null)">' +
-        '全部<span class="category-count">' + getCategoryCount(null) + '</span>' +
-        '</span>';
-      
-      var allCard = '<div class="category-card"><div class="category-card-content"><div class="category-card-actions">' +
-        '<span class="category-card-btn edit" onclick="filterByCategory(null)">' +
-        '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h7"/></svg>' +
-        '查看</span></div></div></div>';
-      
-      var allWrapper = '<div class="category-wrapper" onmouseenter="showCategoryCard(this)" onmouseleave="hideCategoryCard(this)">' +
-        allTag + allCard + '</div>';
-      
-      // 构建"无分类"标签
-      var noneActiveClass = currentCategoryId === NO_CATEGORY ? 'active' : '';
-      var noneTag = '<span class="tab-item tab-compact ' + noneActiveClass + ' cursor-pointer whitespace-nowrap" ' +
-        'onclick="filterByCategory(\'__none__\')">' +
-        '无分类<span class="category-count">' + getCategoryCount(NO_CATEGORY) + '</span>' +
-        '</span>';
-      
-      // 构建分类标签
-      var categoriesHtml = '';
-      for (var i = 0; i < categories.length; i++) {
-        var c = categories[i];
-        var activeClass = currentCategoryId === c.id ? 'active' : '';
-        var cId = escapeHtml(c.id);
-        var cName = escapeHtml(c.name);
-        
-        var tag = '<span class="tab-item tab-compact ' + activeClass + ' cursor-pointer whitespace-nowrap" ' +
+    // 渲染分类树
+    function renderCategoryTree() {
+      const byParent = buildCategoryTree();
+
+      // "全部"节点
+      let html = '<div class="tree-node' + (currentCategoryId === null ? ' active' : '') + '" onclick="filterByCategory(null)">' +
+        '<span class="tree-toggle"></span>' +
+        '<span class="tree-name">全部</span>' +
+        '<span class="category-count">' + getCategoryCount(null) + '</span>' +
+        '</div>';
+
+      // "无分类"节点
+      html += '<div class="tree-node' + (currentCategoryId === NO_CATEGORY ? ' active' : '') + '" onclick="filterByCategory(\'__none__\')">' +
+        '<span class="tree-toggle"></span>' +
+        '<span class="tree-name">无分类</span>' +
+        '<span class="category-count">' + getCategoryCount(NO_CATEGORY) + '</span>' +
+        '</div>';
+
+      html += renderTreeLevel(byParent, null, 0);
+      treeEl.innerHTML = html;
+    }
+
+    // 递归渲染某一层级的分类
+    function renderTreeLevel(byParent, parentId, depth) {
+      const list = byParent.get(parentId) || [];
+      let html = '';
+      for (const c of list) {
+        const cId = escapeHtml(c.id);
+        const children = byParent.get(c.id) || [];
+        const hasChildren = children.length > 0;
+        const expanded = !collapsedCategories.has(c.id);
+        const activeClass = currentCategoryId === c.id ? ' active' : '';
+
+        html += '<div class="tree-node' + activeClass + '" style="padding-left: ' + (0.75 + depth * 1) + 'rem" ' +
           'onclick="filterByCategory(\'' + cId + '\')" ' +
+          'oncontextmenu="showCategoryContextMenu(event, \'' + cId + '\')" ' +
           'draggable="true" ' +
           'ondragstart="handleCategoryDragStart(event, \'' + cId + '\')" ' +
           'ondragend="handleCategoryDragEnd(event)" ' +
           'ondragover="handleCategoryDragOver(event)" ' +
           'ondragleave="handleCategoryDragLeave(event)" ' +
           'ondrop="handleCategoryDrop(event, \'' + cId + '\')">' +
-          cName + '<span class="category-count">' + getCategoryCount(c.id) + '</span>' +
-          '</span>';
-        
-        var card = '<div class="category-card"><div class="category-card-content"><div class="category-card-actions">' +
-          '<span class="category-card-btn edit" onclick="editCategory(\'' + cId + '\')">' +
-          '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>' +
-          '编辑</span>' +
-          '<span class="category-card-btn delete" onclick="deleteCategory(\'' + cId + '\')">' +
-          '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
-          '删除</span></div></div></div>';
-        
-        var wrapper = '<div class="category-wrapper" onmouseenter="showCategoryCard(this)" onmouseleave="hideCategoryCard(this)">' +
-          tag + card + '</div>';
-        
-        categoriesHtml += wrapper;
-      }
-      
-      categoryBar.innerHTML = allWrapper + noneTag + categoriesHtml;
-    }
+          '<span class="tree-toggle"' + (hasChildren ? ' onclick="toggleExpand(event, \'' + cId + '\')"' : '') + '>' +
+          (hasChildren ? (expanded ? '▾' : '▸') : '') + '</span>' +
+          '<span class="tree-name">' + escapeHtml(c.name) + '</span>' +
+          '<span class="category-count">' + getCategoryCount(c.id) + '</span>' +
+          '</div>';
 
-    // 悬浮卡片显示/隐藏控制
-    let currentActiveCard = null;
-    let hideCardTimer = null;
-
-    function showCategoryCard(wrapper) {
-      const card = wrapper.querySelector('.category-card');
-      
-      // 如果有其他卡片正在显示，先隐藏它
-      if (currentActiveCard && currentActiveCard !== card) {
-        currentActiveCard.style.opacity = '0';
-        currentActiveCard.style.visibility = 'hidden';
-        currentActiveCard.style.pointerEvents = 'none';
-      }
-      
-      // 取消之前的隐藏定时器
-      if (hideCardTimer) {
-        clearTimeout(hideCardTimer);
-        hideCardTimer = null;
-      }
-      
-      // 显示当前卡片
-      card.style.opacity = '1';
-      card.style.visibility = 'visible';
-      card.style.pointerEvents = 'auto';
-      currentActiveCard = card;
-    }
-
-    function hideCategoryCard(wrapper) {
-      const card = wrapper.querySelector('.category-card');
-      hideCardTimer = setTimeout(() => {
-        card.style.opacity = '0';
-        card.style.visibility = 'hidden';
-        card.style.pointerEvents = 'none';
-        if (currentActiveCard === card) {
-          currentActiveCard = null;
+        if (hasChildren && expanded) {
+          html += renderTreeLevel(byParent, c.id, depth + 1);
         }
-      }, 100);
+      }
+      return html;
+    }
+
+    // 展开/折叠分类
+    function toggleExpand(event, categoryId) {
+      event.stopPropagation();
+      if (collapsedCategories.has(categoryId)) {
+        collapsedCategories.delete(categoryId);
+      } else {
+        collapsedCategories.add(categoryId);
+      }
+      localStorage.setItem('collapsedCategories', JSON.stringify([...collapsedCategories]));
+      renderCategoryTree();
     }
 
     // 按分类筛选书签
     function filterByCategory(categoryId) {
       currentCategoryId = categoryId;
-      renderCategories();
+      renderCategoryTree();
       renderBookmarks();
     }
 
@@ -753,7 +750,7 @@
         const res = await fetch(`${API_BASE}/api/bookmarks`);
         bookmarks = await res.json();
         renderBookmarks();
-        renderCategories();
+        renderCategoryTree();
         updateStats();
         initScrollReveal();
       } catch (err) {
@@ -778,6 +775,7 @@
       if (currentCategoryId === NO_CATEGORY) {
         filtered = bookmarks.filter(b => !b.categoryIds || b.categoryIds.length === 0);
       } else if (currentCategoryId) {
+        // 只显示直接属于当前分类的书签，不含子分类
         filtered = bookmarks.filter(b => b.categoryIds && b.categoryIds.includes(currentCategoryId));
       }
 
@@ -833,26 +831,10 @@
       }
     }
 
-    // 更新书签分类
-    async function updateBookmarkCategory(bookmarkId, categoryId) {
-      try {
-        const categoryIds = categoryId ? [categoryId] : [];
-        const response = await fetch(`${API_BASE}/api/bookmarks/${bookmarkId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ categoryIds }),
-        });
-        if (response.ok) {
-          await loadBookmarks();
-        }
-      } catch (err) {
-        alert('更新失败');
-      }
-    }
-
-    // 打开新建分类模态框
+    // 打开新建顶级分类模态框
     function openAddCategoryModal() {
       editingCategoryId = null;
+      newCategoryParentId = null;
       modalTitle.textContent = '新建分类';
       categoryNameInput.value = '';
       modal.classList.remove('hidden');
@@ -860,15 +842,40 @@
       setTimeout(() => categoryNameInput.focus(), 100);
     }
 
-    // 编辑分类
-    function editCategory(id) {
-      editingCategoryId = id;
+    // 打开新建子分类模态框（来自分类右键菜单）
+    function openAddSubCategoryModal() {
+      const parentId = categoryMenuTargetId;
+      hideContextMenu();
+      if (!parentId) return;
+      editingCategoryId = null;
+      newCategoryParentId = parentId;
+      modalTitle.textContent = '新建子分类';
+      categoryNameInput.value = '';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => categoryNameInput.focus(), 100);
+    }
+
+    // 打开重命名模态框（来自分类右键菜单）
+    function openRenameCategoryModal() {
+      const id = categoryMenuTargetId;
+      hideContextMenu();
       const category = categories.find(c => c.id === id);
-      modalTitle.textContent = '编辑分类';
+      if (!category) return;
+      editingCategoryId = id;
+      newCategoryParentId = null;
+      modalTitle.textContent = '重命名分类';
       categoryNameInput.value = category.name;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       setTimeout(() => categoryNameInput.focus(), 100);
+    }
+
+    // 删除分类（来自分类右键菜单）
+    function deleteCategoryFromMenu() {
+      const id = categoryMenuTargetId;
+      hideContextMenu();
+      if (id) deleteCategory(id);
     }
 
     // 关闭模态框
@@ -893,9 +900,10 @@
           await fetch(`${API_BASE}/api/categories`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name }),
+            body: JSON.stringify({ name, parentId: newCategoryParentId }),
           });
         }
+        newCategoryParentId = null;
         closeCategoryModal();
         loadCategories();
       } catch (err) {
@@ -903,12 +911,14 @@
       }
     }
 
-    // 删除分类
+    // 删除分类（子分类会提升到父级）
     async function deleteCategory(id) {
-      if (!confirm('确定删除该分类？')) return;
+      if (!confirm('确定删除该分类？其子分类将提升到上一级。')) return;
       try {
         await fetch(`${API_BASE}/api/categories/${id}`, { method: 'DELETE' });
         if (currentCategoryId === id) currentCategoryId = null;
+        collapsedCategories.delete(id);
+        localStorage.setItem('collapsedCategories', JSON.stringify([...collapsedCategories]));
         loadCategories();
         renderBookmarks();
       } catch (err) {
@@ -918,90 +928,217 @@
 
     // 分类拖拽开始
     function handleCategoryDragStart(event, categoryId) {
-      event.target.classList.add('dragging');
+      event.currentTarget.classList.add('dragging');
       event.dataTransfer.setData('text/plain', 'CATEGORY:' + categoryId);
       event.dataTransfer.effectAllowed = 'move';
     }
 
     // 分类拖拽结束
     function handleCategoryDragEnd(event) {
-      if (event && event.target) event.target.classList.remove('dragging');
-      document.querySelectorAll('.tab-item').forEach(tab => {
-        tab.classList.remove('drag-over');
+      if (event && event.currentTarget) event.currentTarget.classList.remove('dragging');
+      document.querySelectorAll('.tree-node').forEach(node => {
+        node.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
       });
+      treeEl.classList.remove('drag-over-root');
     }
 
-    // 分类拖拽经过
+    // 分类拖拽经过（根据鼠标位置区分：上边缘=插到前面，中间=成为子分类，下边缘=插到后面）
     function handleCategoryDragOver(event) {
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
-      document.querySelectorAll('.tab-item').forEach(tab => {
-        tab.classList.remove('drag-over');
-      });
-      event.currentTarget.classList.add('drag-over');
+      const node = event.currentTarget;
+      const rect = node.getBoundingClientRect();
+      const ratio = (event.clientY - rect.top) / rect.height;
+      node.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+      if (ratio < 0.25) {
+        node.classList.add('drag-over-top');
+      } else if (ratio > 0.75) {
+        node.classList.add('drag-over-bottom');
+      } else {
+        node.classList.add('drag-over');
+      }
     }
 
     // 分类拖拽离开
     function handleCategoryDragLeave(event) {
-      event.currentTarget.classList.remove('drag-over');
+      event.currentTarget.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
     }
 
     // 分类 drop
     async function handleCategoryDrop(event, targetCategoryId) {
       event.preventDefault();
-      event.currentTarget.classList.remove('drag-over');
+      const node = event.currentTarget;
+      node.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+
       const data = event.dataTransfer.getData('text/plain');
-      if (data.startsWith('CATEGORY:')) {
-        const draggedId = data.slice('CATEGORY:'.length);
-        if (draggedId === targetCategoryId) return;
-        const newOrder = categories
-          .filter(c => c.id !== draggedId)
-          .map(c => c.id);
-        const targetIndex = newOrder.indexOf(targetCategoryId);
-        newOrder.splice(targetIndex, 0, draggedId);
+      if (!data.startsWith('CATEGORY:')) return;
+
+      const draggedId = data.slice('CATEGORY:'.length);
+      if (draggedId === targetCategoryId) return;
+
+      const dragged = categories.find(c => c.id === draggedId);
+      const target = categories.find(c => c.id === targetCategoryId);
+      if (!dragged || !target) return;
+
+      // 不能拖到自己的后代上（会形成循环）
+      if (getDescendantIds(draggedId).includes(targetCategoryId)) return;
+
+      const rect = node.getBoundingClientRect();
+      const ratio = (event.clientY - rect.top) / rect.height;
+
+      if (ratio < 0.25 || ratio > 0.75) {
+        // 放到上/下边缘：插入到目标所在层级的前面/后面
+        await reorderCategory(dragged, target, ratio > 0.75);
+      } else {
+        // 放到中间：成为目标的子分类
+        if ((dragged.parentId || null) === targetCategoryId) return;
         try {
-          const response = await fetch(`${API_BASE}/api/categories/order`, {
+          const response = await fetch(`${API_BASE}/api/categories/${draggedId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order: newOrder }),
+            body: JSON.stringify({ parentId: targetCategoryId }),
           });
           if (response.ok) {
+            // 展开目标分类，便于看到移动结果
+            collapsedCategories.delete(targetCategoryId);
+            localStorage.setItem('collapsedCategories', JSON.stringify([...collapsedCategories]));
             await loadCategories();
+          } else {
+            const err = await response.json().catch(() => null);
+            alert(err?.error || '移动失败');
           }
         } catch (err) {
-          console.error('排序保存失败:', err);
+          console.error('移动分类失败:', err);
         }
+      }
+    }
+
+    // 把 dragged 插入到 target 所在层级的前面或后面
+    async function reorderCategory(dragged, target, insertAfter) {
+      const parentId = target.parentId || null;
+      const siblingIds = categories
+        .filter(c => (c.parentId || null) === parentId && c.id !== dragged.id)
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map(c => c.id);
+      let targetIndex = siblingIds.indexOf(target.id);
+      if (insertAfter) targetIndex += 1;
+      siblingIds.splice(targetIndex, 0, dragged.id);
+
+      try {
+        // 跨父级移动时先更新 parentId
+        if ((dragged.parentId || null) !== parentId) {
+          const moveRes = await fetch(`${API_BASE}/api/categories/${dragged.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parentId }),
+          });
+          if (!moveRes.ok) return;
+        }
+        const response = await fetch(`${API_BASE}/api/categories/order`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order: siblingIds }),
+        });
+        if (response.ok) {
+          await loadCategories();
+        }
+      } catch (err) {
+        console.error('排序保存失败:', err);
+      }
+    }
+
+    // 拖到侧边栏空白处：移回顶级分类末尾
+    function handleRootDragOver(event) {
+      if (event.target !== event.currentTarget) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      event.currentTarget.classList.add('drag-over-root');
+    }
+
+    function handleRootDragLeave(event) {
+      if (event.target !== event.currentTarget) return;
+      event.currentTarget.classList.remove('drag-over-root');
+    }
+
+    async function handleRootDrop(event) {
+      if (event.target !== event.currentTarget) return;
+      event.preventDefault();
+      event.currentTarget.classList.remove('drag-over-root');
+      const data = event.dataTransfer.getData('text/plain');
+      if (!data.startsWith('CATEGORY:')) return;
+      const draggedId = data.slice('CATEGORY:'.length);
+      const dragged = categories.find(c => c.id === draggedId);
+      if (!dragged || (dragged.parentId || null) === null) return;
+      try {
+        const response = await fetch(`${API_BASE}/api/categories/${draggedId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parentId: null }),
+        });
+        if (response.ok) {
+          await loadCategories();
+        }
+      } catch (err) {
+        console.error('移动分类失败:', err);
       }
     }
 
     // 右键菜单相关
     const contextMenu = document.getElementById('context-menu');
     const contextMenuCategories = document.getElementById('context-menu-categories');
+    const categoryContextMenu = document.getElementById('category-context-menu');
     let contextMenuBookmarkId = null;
+    let categoryMenuTargetId = null;
 
-    // 显示右键菜单
+    // 显示书签右键菜单
     function showContextMenu(event, bookmarkId) {
       event.preventDefault();
       contextMenuBookmarkId = bookmarkId;
       const bookmark = bookmarks.find(b => b.id === bookmarkId);
       const categoryIds = bookmark?.categoryIds || [];
 
-      contextMenuCategories.innerHTML = `
+      const noneItem = `
         <div class="context-menu-item ${categoryIds.length === 0 ? 'active' : ''}" 
           onclick="toggleBookmarkCategory('${escapeHtml(bookmarkId)}', null)">
           ${categoryIds.length === 0 ? '✓ ' : ''}无分类
-        </div>
-      ` + categories.map(c => `
-        <div class="context-menu-item ${categoryIds.includes(c.id) ? 'active' : ''}" 
-          onclick="toggleBookmarkCategory('${escapeHtml(bookmarkId)}', '${escapeHtml(c.id)}')">
-          ${categoryIds.includes(c.id) ? '✓ ' : ''}${escapeHtml(c.name)}
-        </div>
-      `).join('');
+        </div>`;
+
+      contextMenuCategories.innerHTML = noneItem + buildMenuCategoryItems(categoryIds, bookmarkId, null, 0);
 
       // 定位菜单
       contextMenu.style.left = event.clientX + 'px';
       contextMenu.style.top = event.clientY + 'px';
       contextMenu.classList.remove('hidden');
+      categoryContextMenu.classList.add('hidden');
+    }
+
+    // 按树形结构生成分类菜单项
+    function buildMenuCategoryItems(categoryIds, bookmarkId, parentId, depth) {
+      const children = categories
+        .filter(c => (c.parentId || null) === parentId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      let html = '';
+      for (const c of children) {
+        html += `
+        <div class="context-menu-item ${categoryIds.includes(c.id) ? 'active' : ''}" 
+          style="padding-left: ${1 + depth * 1.25}rem"
+          onclick="toggleBookmarkCategory('${escapeHtml(bookmarkId)}', '${escapeHtml(c.id)}')">
+          ${categoryIds.includes(c.id) ? '✓ ' : ''}${escapeHtml(c.name)}
+        </div>`;
+        html += buildMenuCategoryItems(categoryIds, bookmarkId, c.id, depth + 1);
+      }
+      return html;
+    }
+
+    // 显示分类右键菜单
+    function showCategoryContextMenu(event, categoryId) {
+      event.preventDefault();
+      event.stopPropagation();
+      categoryMenuTargetId = categoryId;
+      categoryContextMenu.style.left = event.clientX + 'px';
+      categoryContextMenu.style.top = event.clientY + 'px';
+      categoryContextMenu.classList.remove('hidden');
+      contextMenu.classList.add('hidden');
     }
 
     // 切换书签分类
@@ -1028,7 +1165,7 @@
           bookmark.categoryIds = categoryIds;
           hideContextMenu();
           renderBookmarks();
-          renderCategories();
+          renderCategoryTree();
         }
       } catch (err) {
         console.error('更新分类失败:', err);
@@ -1039,6 +1176,8 @@
     function hideContextMenu() {
       contextMenu.classList.add('hidden');
       contextMenuBookmarkId = null;
+      categoryContextMenu.classList.add('hidden');
+      categoryMenuTargetId = null;
     }
 
     // 点击其他地方隐藏菜单

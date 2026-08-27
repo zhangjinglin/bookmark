@@ -27,20 +27,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadCategories();
 });
 
-// 加载分类
+// 加载分类（树形缩进展示）
 async function loadCategories() {
   try {
     const res = await fetch(`${WORKER_URL}/api/categories`);
     const categories = await res.json();
-    
-    categories.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat.id;
-      option.textContent = cat.name;
-      categorySelect.appendChild(option);
-    });
+    appendCategoryOptions(categories, null, 0);
   } catch (err) {
     console.error('加载分类失败:', err);
+  }
+}
+
+// 递归添加分类选项
+function appendCategoryOptions(categories, parentId, depth) {
+  const children = categories
+    .filter(c => (c.parentId || null) === parentId)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  for (const cat of children) {
+    const option = document.createElement('option');
+    option.value = cat.id;
+    option.textContent = '\u3000'.repeat(depth) + (depth > 0 ? '└ ' : '') + cat.name;
+    categorySelect.appendChild(option);
+    appendCategoryOptions(categories, cat.id, depth + 1);
   }
 }
 

@@ -32,15 +32,8 @@ async function rebuildContextMenu() {
     contexts: ['action']
   });
   
-  // 创建各分类子菜单
-  categories.forEach(cat => {
-    chrome.contextMenus.create({
-      id: `add-to-${cat.id}`,
-      parentId: 'add-to-category',
-      title: cat.name,
-      contexts: ['action']
-    });
-  });
+  // 按树形结构创建分类子菜单
+  buildCategoryMenuItems(categories, null, 'add-to-category');
   
   // 创建「打开书签管理」菜单
   chrome.contextMenus.create({
@@ -55,6 +48,35 @@ async function rebuildContextMenu() {
     title: '🔄 刷新分类',
     contexts: ['action']
   });
+}
+
+// 递归创建分类子菜单
+function buildCategoryMenuItems(categories, parentId, menuParentId) {
+  const children = categories
+    .filter(c => (c.parentId || null) === parentId)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  for (const cat of children) {
+    const itemId = `add-to-${cat.id}`;
+    chrome.contextMenus.create({
+      id: itemId,
+      parentId: menuParentId,
+      title: cat.name,
+      contexts: ['action']
+    });
+
+    const subChildren = categories.filter(c => (c.parentId || null) === cat.id);
+    if (subChildren.length > 0) {
+      // 有子分类时父项变为子菜单，无法直接点击，补充「保存到本级」入口
+      chrome.contextMenus.create({
+        id: `add-to-self-${cat.id}`,
+        parentId: itemId,
+        title: `保存到「${cat.name}」`,
+        contexts: ['action']
+      });
+      buildCategoryMenuItems(categories, cat.id, itemId);
+    }
+  }
 }
 
 // 初始化
@@ -83,8 +105,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   
   if (info.menuItemId === 'add-no-category') {
     await saveBookmark(tab, []);
-  } else if (info.menuItemId.startsWith('add-to-')) {
-    const categoryId = info.menuItemId.replace('add-to-', '');
+  } else if (String(info.menuItemId).startsWith('add-to-self-')) {
+    const categoryId = String(info.menuItemId).replace('add-to-self-', '');
+    await saveBookmark(tab, [categoryId]);
+  } else if (String(info.menuItemId).startsWith('add-to-')) {
+    const categoryId = String(info.menuItemId).replace('add-to-', '');
     await saveBookmark(tab, [categoryId]);
   }
 });

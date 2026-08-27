@@ -62,20 +62,27 @@ export default {
       return jsonResponse(categories);
     }
 
-    // 新建分类
+    // 新建分类（支持 parentId 指定父分类）
     if (url.pathname === '/api/categories' && request.method === 'POST') {
       const body = await parseJsonBody(request);
       const name = body?.name;
+      const parentId = body?.parentId ?? null;
 
       if (!name) {
         return jsonResponse({ error: 'Name is required' }, 400);
       }
 
       const categories = await readList(env, 'categories');
+      if (parentId !== null && !categories.some((c) => c.id === parentId)) {
+        return jsonResponse({ error: 'Parent category not found' }, 400);
+      }
+
+      const siblings = categories.filter((c) => (c.parentId ?? null) === parentId);
       const newCategory = {
         id: crypto.randomUUID(),
         name,
-        order: categories.length,
+        parentId,
+        order: siblings.length,
         createdAt: new Date().toISOString(),
       };
       categories.push(newCategory);
@@ -101,7 +108,7 @@ export default {
       return jsonResponse(categories);
     }
 
-    // 编辑分类
+    // 编辑分类（name、order、parentId）
     const categoryMatch = url.pathname.match(/^\/api\/categories\/(.+)$/);
     if (categoryMatch && request.method === 'PUT') {
       const id = categoryMatch[1];
@@ -109,13 +116,37 @@ export default {
       if (!body) {
         return jsonResponse({ error: 'Invalid JSON body' }, 400);
       }
-      const { name, order } = body;
+      const { name, order, parentId } = body;
 
       const categories = await readList(env, 'categories');
       const index = categories.findIndex((c) => c.id === id);
 
       if (index === -1) {
         return jsonResponse({ error: 'Category not found' }, 404);
+      }
+
+      if (parentId !== undefined) {
+        const targetParentId = parentId ?? null;
+        if (targetParentId !== null) {
+          if (!categories.some((c) => c.id === targetParentId)) {
+            return jsonResponse({ error: 'Parent category not found' }, 400);
+          }
+          // 防止循环：目标父分类不能是自身或自身的后代
+          let cursor: any = categories.find((c) => c.id === targetParentId);
+          let guard = 0;
+          while (cursor && guard < 1000) {
+            if (cursor.id === id) {
+              return jsonResponse({ error: 'Cannot move category under its own descendant' }, 400);
+            }
+            cursor = categories.find((c) => c.id === (cursor.parentId ?? null));
+            guard++;
+          }
+        }
+        categories[index].parentId = targetParentId;
+        // 移动到新父级后排到该层级末尾
+        categories[index].order = categories.filter(
+          (c, i) => i !== index && (c.parentId ?? null) === targetParentId
+        ).length;
       }
 
       if (name !== undefined) categories[index].name = name;
@@ -125,11 +156,17 @@ export default {
       return jsonResponse(categories[index]);
     }
 
-    // 删除分类（同时清理书签中对该分类的引用）
+    // 删除分类（子分类提升到父级，同时清理书签中对该分类的引用）
     if (categoryMatch && request.method === 'DELETE') {
       const id = categoryMatch[1];
       const categories = await readList(env, 'categories');
+      const target = categories.find((c) => c.id === id);
+      const newParentId = target ? (target.parentId ?? null) : null;
+
       const filtered = categories.filter((c) => c.id !== id);
+      for (const c of filtered) {
+        if ((c.parentId ?? null) === id) c.parentId = newParentId;
+      }
       await env.BOOKMARKS.put('categories', JSON.stringify(filtered));
 
       const bookmarks = await readList(env, 'bookmarks');
