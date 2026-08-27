@@ -67,6 +67,29 @@ export default {
       });
     }
 
+    // 批量更新分类顺序
+    if (url.pathname === '/api/categories/order' && request.method === 'PUT') {
+      const body = await request.json();
+      const { order } = body;
+      if (!Array.isArray(order)) {
+        return new Response(JSON.stringify({ error: 'order must be an array' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+      const data = await env.BOOKMARKS.get('categories', 'json');
+      const categories = data || [];
+      const categoryMap = new Map(categories.map((c: any) => [c.id, c]));
+      order.forEach((id: string, index: number) => {
+        const cat = categoryMap.get(id);
+        if (cat) cat.order = index;
+      });
+      await env.BOOKMARKS.put('categories', JSON.stringify(categories));
+      return new Response(JSON.stringify(categories), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
     // 编辑分类
     const categoryMatch = url.pathname.match(/^\/api\/categories\/(.+)$/);
     if (categoryMatch && request.method === 'PUT') {

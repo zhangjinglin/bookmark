@@ -73,10 +73,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     // 刷新分类菜单
     await rebuildContextMenu();
     // 显示刷新成功提示
-    await chrome.action.setBadgeText({ text: '✓', tabId: tab.id });
-    await chrome.action.setBadgeBackgroundColor({ color: '#28a745', tabId: tab.id });
+    await chrome.action.setBadgeText({ text: '✓' });
+    await chrome.action.setBadgeBackgroundColor({ color: '#28a745' });
     setTimeout(async () => {
-      await chrome.action.setBadgeText({ text: '', tabId: tab.id });
+      await chrome.action.setBadgeText({ text: '' });
     }, 1500);
     return;
   }
@@ -97,8 +97,8 @@ chrome.action.onClicked.addListener(async (tab) => {
 // 保存书签函数
 async function saveBookmark(tab, categoryIds = []) {
   // 显示保存中状态
-  await chrome.action.setBadgeText({ text: '...', tabId: tab.id });
-  await chrome.action.setBadgeBackgroundColor({ color: '#007bff', tabId: tab.id });
+  await chrome.action.setBadgeText({ text: '...' });
+  await chrome.action.setBadgeBackgroundColor({ color: '#007bff' });
   
   try {
     const response = await fetch(`${WORKER_URL}/api/bookmarks`, {
@@ -115,22 +115,22 @@ async function saveBookmark(tab, categoryIds = []) {
 
     if (response.ok) {
       // 显示成功状态
-      await chrome.action.setBadgeText({ text: '✓', tabId: tab.id });
-      await chrome.action.setBadgeBackgroundColor({ color: '#28a745', tabId: tab.id });
+      await chrome.action.setBadgeText({ text: '✓' });
+      await chrome.action.setBadgeBackgroundColor({ color: '#28a745' });
     } else {
       // 显示失败状态
-      await chrome.action.setBadgeText({ text: '✗', tabId: tab.id });
-      await chrome.action.setBadgeBackgroundColor({ color: '#dc3545', tabId: tab.id });
+      await chrome.action.setBadgeText({ text: '✗' });
+      await chrome.action.setBadgeBackgroundColor({ color: '#dc3545' });
     }
   } catch (error) {
     // 显示错误状态
-    await chrome.action.setBadgeText({ text: '!', tabId: tab.id });
-    await chrome.action.setBadgeBackgroundColor({ color: '#dc3545', tabId: tab.id });
+    await chrome.action.setBadgeText({ text: '!' });
+    await chrome.action.setBadgeBackgroundColor({ color: '#dc3545' });
     console.error('保存书签失败:', error);
   }
   
   // 2秒后清除状态
   setTimeout(async () => {
-    await chrome.action.setBadgeText({ text: '', tabId: tab.id });
+    await chrome.action.setBadgeText({ text: '' });
   }, 2000);
 }
