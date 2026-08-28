@@ -368,6 +368,11 @@
       color: #ef4444;
     }
 
+    #context-menu-categories {
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+
     /* 模态框 */
     .modal-overlay {
       background: rgba(5, 5, 5, 0.8);
@@ -1105,11 +1110,33 @@
 
       contextMenuCategories.innerHTML = noneItem + buildMenuCategoryItems(categoryIds, bookmarkId, null, 0);
 
-      // 定位菜单
-      contextMenu.style.left = event.clientX + 'px';
-      contextMenu.style.top = event.clientY + 'px';
-      contextMenu.classList.remove('hidden');
+      positionContextMenu(contextMenu, event);
       categoryContextMenu.classList.add('hidden');
+    }
+
+    // 定位菜单：超出视口时向上翻转/向左收拢
+    function positionContextMenu(menu, event) {
+      const margin = 8;
+      menu.style.left = '0px';
+      menu.style.top = '0px';
+      menu.style.maxHeight = '';
+      menu.style.overflowY = '';
+      menu.classList.remove('hidden');
+      const rect = menu.getBoundingClientRect();
+      if (rect.height > window.innerHeight - margin * 2) {
+        menu.style.maxHeight = (window.innerHeight - margin * 2) + 'px';
+        menu.style.overflowY = 'auto';
+      }
+      let left = event.clientX;
+      let top = event.clientY;
+      if (left + rect.width > window.innerWidth - margin) {
+        left = Math.max(margin, window.innerWidth - rect.width - margin);
+      }
+      if (top + rect.height > window.innerHeight - margin) {
+        top = Math.max(margin, event.clientY - rect.height);
+      }
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
     }
 
     // 按树形结构生成分类菜单项
@@ -1135,9 +1162,7 @@
       event.preventDefault();
       event.stopPropagation();
       categoryMenuTargetId = categoryId;
-      categoryContextMenu.style.left = event.clientX + 'px';
-      categoryContextMenu.style.top = event.clientY + 'px';
-      categoryContextMenu.classList.remove('hidden');
+      positionContextMenu(categoryContextMenu, event);
       contextMenu.classList.add('hidden');
     }
 
