@@ -1208,11 +1208,15 @@
     // 点击其他地方隐藏菜单
     document.addEventListener('click', hideContextMenu);
 
-    // ESC 键关闭模态框和右键菜单
+    // 键盘事件处理
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeCategoryModal();
         hideContextMenu();
+      }
+      if (e.key === 'Enter' && !modal.classList.contains('hidden')) {
+        e.preventDefault();
+        saveCategory();
       }
     });
 
