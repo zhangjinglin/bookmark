@@ -7,7 +7,7 @@ const NO_CATEGORY = '__none__';
 let categories = [];
 let bookmarks = [];
 let currentCategoryId = null;
-let collapsedCategories = new Set();
+let collapsedCategories = new Set(JSON.parse(localStorage.getItem('popupCollapsed') || '[]'));
 
 const treeEl = document.getElementById('tree');
 const listEl = document.getElementById('list');
@@ -37,10 +37,23 @@ async function loadData() {
     ]);
     categories = await catRes.json();
     bookmarks = await bmRes.json();
+    restoreSelection();
     renderCategoryTree();
     renderBookmarks();
   } catch (err) {
     listEl.innerHTML = emptyHtml('加载失败');
+  }
+}
+
+function restoreSelection() {
+  const saved = localStorage.getItem('popupLastCategory');
+  if (saved === 'none') {
+    currentCategoryId = NO_CATEGORY;
+  } else if (saved && saved !== 'all') {
+    // 分类可能已被删除，失效则回退到"全部"
+    currentCategoryId = categories.some(c => c.id === saved) ? saved : null;
+  } else {
+    currentCategoryId = null;
   }
 }
 
@@ -118,6 +131,7 @@ function handleTreeClick(e) {
     } else {
       collapsedCategories.add(dataId);
     }
+    localStorage.setItem('popupCollapsed', JSON.stringify([...collapsedCategories]));
     renderCategoryTree();
     return;
   }
@@ -129,6 +143,7 @@ function handleTreeClick(e) {
   } else {
     currentCategoryId = dataId;
   }
+  localStorage.setItem('popupLastCategory', dataId);
 
   renderCategoryTree();
   renderBookmarks();
