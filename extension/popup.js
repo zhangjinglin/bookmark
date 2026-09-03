@@ -1,88 +1,197 @@
-// 从 config.js 读取配置
 import config from './config.js';
 const WORKER_URL = config.WORKER_URL;
+const BOOKMARK_URL = config.BOOKMARK_URL;
 
-// DOM 元素
-const pageTitle = document.getElementById('page-title');
-const pageUrl = document.getElementById('page-url');
-const categorySelect = document.getElementById('category-select');
-const saveBtn = document.getElementById('save-btn');
-const message = document.getElementById('message');
+const NO_CATEGORY = '__none__';
 
-let currentTab = null;
+let categories = [];
+let bookmarks = [];
+let currentCategoryId = null;
+let collapsedCategories = new Set();
 
-// 初始化
+const treeEl = document.getElementById('tree');
+const listEl = document.getElementById('list');
+const statsEl = document.getElementById('stats');
+const openSiteBtn = document.getElementById('open-site');
+
 document.addEventListener('DOMContentLoaded', async () => {
-  // 绑定保存按钮事件
-  saveBtn.addEventListener('click', saveBookmark);
-  // 获取当前标签页
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  currentTab = tab;
-  
-  // 显示页面信息
-  pageTitle.textContent = tab.title || '无标题';
-  pageUrl.textContent = tab.url || '';
-  
-  // 加载分类列表
-  await loadCategories();
+  openSiteBtn.addEventListener('click', () => {
+    chrome.tabs.create({ url: BOOKMARK_URL });
+    window.close();
+  });
+
+  treeEl.addEventListener('click', handleTreeClick);
+  listEl.addEventListener('click', handleListClick);
+  listEl.addEventListener('error', (e) => {
+    if (e.target.tagName === 'IMG') e.target.style.display = 'none';
+  }, true);
+
+  await loadData();
 });
 
-// 加载分类（树形缩进展示）
-async function loadCategories() {
+async function loadData() {
   try {
-    const res = await fetch(`${WORKER_URL}/api/categories`);
-    const categories = await res.json();
-    appendCategoryOptions(categories, null, 0);
+    const [catRes, bmRes] = await Promise.all([
+      fetch(`${WORKER_URL}/api/categories`),
+      fetch(`${WORKER_URL}/api/bookmarks`)
+    ]);
+    categories = await catRes.json();
+    bookmarks = await bmRes.json();
+    renderCategoryTree();
+    renderBookmarks();
   } catch (err) {
-    console.error('加载分类失败:', err);
+    listEl.innerHTML = emptyHtml('加载失败');
   }
 }
 
-// 递归添加分类选项
-function appendCategoryOptions(categories, parentId, depth) {
-  const children = categories
-    .filter(c => (c.parentId || null) === parentId)
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-  for (const cat of children) {
-    const option = document.createElement('option');
-    option.value = cat.id;
-    option.textContent = '\u3000'.repeat(depth) + (depth > 0 ? '└ ' : '') + cat.name;
-    categorySelect.appendChild(option);
-    appendCategoryOptions(categories, cat.id, depth + 1);
+function buildCategoryTree() {
+  const byParent = new Map();
+  for (const c of categories) {
+    const pid = c.parentId || null;
+    if (!byParent.has(pid)) byParent.set(pid, []);
+    byParent.get(pid).push(c);
   }
+  for (const list of byParent.values()) {
+    list.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+  return byParent;
 }
 
-// 保存书签
-async function saveBookmark() {
-  if (!currentTab) return;
-  
-  saveBtn.disabled = true;
-  saveBtn.textContent = '保存中...';
-  
-  try {
-    const categoryId = categorySelect.value;
-    const categoryIds = categoryId ? [categoryId] : [];
-    
-    const res = await fetch(`${WORKER_URL}/api/bookmarks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: currentTab.url,
-        title: currentTab.title,
-        categoryIds
-      }),
-    });
-    
-    if (res.ok) {
-      message.innerHTML = '<div class="success">✅ 保存成功</div>';
-      setTimeout(() => window.close(), 1000);
-    } else {
-      throw new Error('保存失败');
+function getCategoryCount(categoryId) {
+  if (categoryId === null) return bookmarks.length;
+  if (categoryId === NO_CATEGORY) {
+    return bookmarks.filter(b => !b.categoryIds || b.categoryIds.length === 0).length;
+  }
+  return bookmarks.filter(b => b.categoryIds && b.categoryIds.includes(categoryId)).length;
+}
+
+function renderCategoryTree() {
+  const byParent = buildCategoryTree();
+  let html = '';
+
+  html += treeNodeHtml(null, '全部', getCategoryCount(null), '', 0);
+  html += treeNodeHtml(NO_CATEGORY, '无分类', getCategoryCount(NO_CATEGORY), '', 0);
+  html += renderTreeLevel(byParent, null, 0);
+
+  treeEl.innerHTML = html;
+}
+
+function treeNodeHtml(id, name, count, toggle, depth) {
+  const active = currentCategoryId === id ? ' active' : '';
+  const dataId = id === null ? 'all' : (id === NO_CATEGORY ? 'none' : escapeAttr(id));
+  const paddingLeft = 0.5 + depth;
+  return `<div class="tree-node${active}" data-id="${dataId}" style="padding-left:${paddingLeft}rem">
+    <span class="tree-toggle">${toggle}</span>
+    <span class="tree-name">${escapeHtml(name)}</span>
+    <span class="category-count">${count}</span>
+  </div>`;
+}
+
+function renderTreeLevel(byParent, parentId, depth) {
+  const list = byParent.get(parentId) || [];
+  let html = '';
+  for (const c of list) {
+    const children = byParent.get(c.id) || [];
+    const hasChildren = children.length > 0;
+    const expanded = !collapsedCategories.has(c.id);
+    const toggle = hasChildren ? (expanded ? '▾' : '▸') : '';
+
+    html += treeNodeHtml(c.id, c.name, getCategoryCount(c.id), toggle, depth);
+
+    if (hasChildren && expanded) {
+      html += renderTreeLevel(byParent, c.id, depth + 1);
     }
-  } catch (err) {
-    message.innerHTML = '<div class="error">❌ 保存失败</div>';
-    saveBtn.disabled = false;
-    saveBtn.textContent = '保存';
   }
+  return html;
+}
+
+function handleTreeClick(e) {
+  const node = e.target.closest('.tree-node');
+  if (!node) return;
+
+  const dataId = node.dataset.id;
+  const toggleEl = e.target.closest('.tree-toggle');
+
+  if (toggleEl && toggleEl.textContent.trim() && dataId !== 'all' && dataId !== 'none') {
+    if (collapsedCategories.has(dataId)) {
+      collapsedCategories.delete(dataId);
+    } else {
+      collapsedCategories.add(dataId);
+    }
+    renderCategoryTree();
+    return;
+  }
+
+  if (dataId === 'all') {
+    currentCategoryId = null;
+  } else if (dataId === 'none') {
+    currentCategoryId = NO_CATEGORY;
+  } else {
+    currentCategoryId = dataId;
+  }
+
+  renderCategoryTree();
+  renderBookmarks();
+}
+
+function renderBookmarks() {
+  let filtered = bookmarks;
+  if (currentCategoryId === NO_CATEGORY) {
+    filtered = bookmarks.filter(b => !b.categoryIds || b.categoryIds.length === 0);
+  } else if (currentCategoryId) {
+    filtered = bookmarks.filter(b => b.categoryIds && b.categoryIds.includes(currentCategoryId));
+  }
+
+  statsEl.textContent = `共 ${filtered.length} 条`;
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = emptyHtml('暂无书签');
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(b => {
+    const title = escapeHtml(b.title || b.url);
+    const url = escapeAttr(b.url);
+    const favicon = getFaviconUrl(b.url);
+    return `<div class="bookmark-item" data-url="${url}" title="${escapeAttr(b.title || b.url)}">
+      <img class="bookmark-favicon" src="${favicon}" alt="">
+      <span class="bookmark-title">${title}</span>
+    </div>`;
+  }).join('');
+}
+
+function handleListClick(e) {
+  const item = e.target.closest('.bookmark-item');
+  if (!item) return;
+  const url = item.dataset.url;
+  if (url) {
+    chrome.tabs.create({ url });
+    window.close();
+  }
+}
+
+function getFaviconUrl(url) {
+  try {
+    const u = new URL(url);
+    return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=32`;
+  } catch {
+    return '';
+  }
+}
+
+function emptyHtml(text) {
+  return `<div class="empty">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+    </svg>
+    <span>${escapeHtml(text)}</span>
+  </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function escapeAttr(s) {
+  return String(s || '').replace(/"/g, '&quot;');
 }

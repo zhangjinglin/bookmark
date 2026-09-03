@@ -1,35 +1,29 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="dark">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=320, initial-scale=1.0">
-  <title>添加书签</title>
+  <meta name="viewport" content="width=720, initial-scale=1.0">
+  <title>书签</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      width: 320px;
-      min-height: 200px;
+      width: 720px;
+      height: 500px;
       font-family: 'Geist', 'Plus Jakarta Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
       background-color: #050505;
       color: #e2e8f0;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* 背景渐变光晕 */
     .bg-gradient {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       z-index: -1;
       overflow: hidden;
     }
@@ -37,334 +31,204 @@
     .bg-gradient::before {
       content: '';
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: 
-        radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 60%);
-      animation: gradientMove 20s ease-in-out infinite;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
     }
 
-    @keyframes gradientMove {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      25% { transform: translate(5%, -5%) rotate(1deg); }
-      50% { transform: translate(-3%, 3%) rotate(-1deg); }
-      75% { transform: translate(3%, 5%) rotate(1deg); }
-    }
-
-    /* 玻璃效果 */
-    .glass {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .glass-card {
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        inset 0 1px 1px rgba(255, 255, 255, 0.05);
-    }
-
-    /* 双层边框技术 */
-    .double-bezel {
-      position: relative;
-      border-radius: 1.5rem;
-      padding: 4px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-    }
-
-    .double-bezel-inner {
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(40px);
-      -webkit-backdrop-filter: blur(40px);
-      border-radius: calc(1.5rem - 4px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
-    }
-
-    /* 按钮悬停效果 */
-    .btn-magnetic {
-      position: relative;
-      transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    }
-
-    .btn-magnetic:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px -10px rgba(139, 92, 246, 0.5);
-    }
-
-    .btn-magnetic:active {
-      transform: scale(0.98) translateY(0);
-    }
-
-    /* 淡入动画 */
-    .fade-in {
-      animation: fadeIn 0.6s cubic-bezier(0.32, 0.72, 0, 1);
-    }
-
-    @keyframes fadeIn {
-      from { 
-        opacity: 0; 
-        transform: translateY(20px) blur(10px);
-      }
-      to { 
-        opacity: 1; 
-        transform: translateY(0) blur(0);
-      }
-    }
-
-    /* 输入框 */
-    .input-glass {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 0.75rem;
-      transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    }
-
-    .input-glass:focus {
-      outline: none;
-      border-color: rgba(139, 92, 246, 0.5);
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-    }
-
-    /* 选择框 */
-    select.input-glass {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.75rem center;
-      background-size: 1rem;
-    }
-
-    /* 页面信息卡片 */
-    .page-info-card {
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 1rem;
-      padding: 1rem;
-    }
-
-    /* 页面标题 */
-    .page-title {
-      font-weight: 600;
-      color: #e2e8f0;
-      margin-bottom: 0.5rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 0.875rem;
-    }
-
-    /* 页面URL */
-    .page-url {
-      color: #64748b;
-      font-size: 0.75rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* 消息提示 */
-    .success {
-      color: #10b981;
-      text-align: center;
-      padding: 0.75rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-
-    .error {
-      color: #ef4444;
-      text-align: center;
-      padding: 0.75rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-
-    /* 噪点纹理 */
-    .noise-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-      z-index: 50;
-      opacity: 0.03;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
-
-    /* 图标 */
-    .icon-light {
-      stroke-width: 1.5;
-    }
-
-    /* 标题区域 */
     .header {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin-bottom: 1.25rem;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
     }
 
     .header-icon {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 0.75rem;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.5rem;
       background: linear-gradient(135deg, #8b5cf6, #3b82f6);
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .header-icon svg {
-      width: 1.25rem;
-      height: 1.25rem;
+      width: 1.1rem;
+      height: 1.1rem;
       color: white;
     }
 
     .header-text h1 {
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: #e2e8f0;
       letter-spacing: -0.025em;
     }
 
-    .header-text p {
+    .header-stats {
       font-size: 0.75rem;
       color: #64748b;
-      margin-top: 0.125rem;
+      margin-left: auto;
     }
 
-    /* 主容器 */
-    .main {
-      padding: 1rem;
+    .open-site-btn {
+      padding: 0.35rem 0.75rem;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      color: #a78bfa;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+
+    .open-site-btn:hover {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    .content {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
       position: relative;
       z-index: 10;
     }
 
-    .double-bezel {
-      margin-bottom: 1rem;
+    .sidebar {
+      width: 200px;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      overflow-y: auto;
+      padding: 0.5rem;
+      flex-shrink: 0;
     }
 
-    .inner-pad-lg {
-      padding: 0.75rem;
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
     }
 
-    .inner-pad-sm {
-      padding: 0.25rem;
-    }
+    .sidebar::-webkit-scrollbar,
+    .main::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track,
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb,
+    .main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
-    /* 表单标签 */
-    .field-group {
-      margin-bottom: 1rem;
-    }
-
-    .field-label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #64748b;
-      margin: 0 0 0.5rem 0.25rem;
-    }
-
-    /* 分类选择框 */
-    #category-select {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 0.875rem;
-      color: #fff;
-    }
-
-    /* 保存按钮 */
-    #save-btn {
-      width: 100%;
-      padding: 0.875rem 0;
-      background: linear-gradient(90deg, #8b5cf6, #3b82f6);
-      color: #fff;
-      font-size: 0.875rem;
-      font-weight: 500;
-      border: none;
-      border-radius: 1rem;
+    .tree-node {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 0.5rem;
       cursor: pointer;
-      transition: all 0.3s ease;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      transition: all 0.15s;
     }
 
-    #save-btn:hover {
-      box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    .tree-node:hover { background: rgba(255, 255, 255, 0.04); color: #e2e8f0; }
+    .tree-node.active { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+
+    .tree-toggle {
+      width: 0.9rem;
+      text-align: center;
+      font-size: 0.65rem;
+      flex-shrink: 0;
+      user-select: none;
     }
 
-    #save-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .tree-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    /* 消息提示区域 */
-    #message {
-      margin-top: 0.75rem;
+    .category-count {
+      font-size: 0.65rem;
+      color: #475569;
+      flex-shrink: 0;
+    }
+
+    .bookmark-item {
+      display: flex;
+      align-items: center;
+      padding: 0.45rem 0.75rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .bookmark-item:hover { background: rgba(255, 255, 255, 0.04); }
+
+    .bookmark-favicon {
+      width: 1rem;
+      height: 1rem;
+      margin-right: 0.5rem;
+      flex-shrink: 0;
+      border-radius: 2px;
+    }
+
+    .bookmark-title {
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 3rem 1rem;
+      color: #475569;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .empty svg {
+      width: 2rem;
+      height: 2rem;
+      color: #334155;
     }
   </style>
 </head>
 <body>
-  <!-- 背景渐变 -->
   <div class="bg-gradient"></div>
-  
-  <!-- 噪点纹理 -->
-  <div class="noise-overlay"></div>
 
-  <!-- 主容器 -->
-  <div class="main fade-in">
-    
-    <!-- 标题区域 -->
-    <div class="header">
-      <div class="header-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-        </svg>
-      </div>
-      <div class="header-text">
-        <h1>添加书签</h1>
-        <p>保存当前页面</p>
-      </div>
+  <div class="header">
+    <div class="header-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+      </svg>
     </div>
-
-    <!-- 页面信息卡片 -->
-    <div class="double-bezel">
-      <div class="double-bezel-inner inner-pad-lg">
-        <div class="page-info-card">
-          <div class="page-title" id="page-title">加载中...</div>
-          <div class="page-url" id="page-url"></div>
-        </div>
-      </div>
+    <div class="header-text">
+      <h1>书签</h1>
     </div>
+    <span class="header-stats" id="stats"></span>
+    <button class="open-site-btn" id="open-site">打开网站</button>
+  </div>
 
-    <!-- 分类选择 -->
-    <div class="field-group">
-      <label class="field-label">选择分类</label>
-      <div class="double-bezel">
-        <div class="double-bezel-inner inner-pad-sm">
-          <select id="category-select" class="input-glass">
-            <option value="">无分类</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- 保存按钮 -->
-    <button id="save-btn" class="btn-magnetic">
-      保存书签
-    </button>
-
-    <!-- 消息提示 -->
-    <div id="message"></div>
+  <div class="content">
+    <div class="sidebar" id="tree"></div>
+    <div class="main" id="list"></div>
   </div>
 
   <script type="module" src="popup.js"></script>

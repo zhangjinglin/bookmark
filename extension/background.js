@@ -114,11 +114,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
-// 左键点击：直接保存（无分类）
-chrome.action.onClicked.addListener(async (tab) => {
-  await saveBookmark(tab, []);
-});
-
 // 保存书签函数
 async function saveBookmark(tab, categoryIds = []) {
   // 显示保存中状态

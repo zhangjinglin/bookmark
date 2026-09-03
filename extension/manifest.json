@@ -5,6 +5,7 @@
   "description": "一键保存当前页面到 Cloudflare Bookmark Worker",
   "permissions": ["activeTab", "contextMenus"],
   "action": {
+    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
