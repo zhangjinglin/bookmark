@@ -13,6 +13,10 @@ const treeEl = document.getElementById('tree');
 const listEl = document.getElementById('list');
 const statsEl = document.getElementById('stats');
 const openSiteBtn = document.getElementById('open-site');
+const saveBtn = document.getElementById('save-btn');
+const saveTitle = document.getElementById('save-title');
+
+let currentTab = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   openSiteBtn.addEventListener('click', () => {
@@ -20,11 +24,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.close();
   });
 
+  saveBtn.addEventListener('click', saveCurrentPage);
+
   treeEl.addEventListener('click', handleTreeClick);
   listEl.addEventListener('click', handleListClick);
   listEl.addEventListener('error', (e) => {
     if (e.target.tagName === 'IMG') e.target.style.display = 'none';
   }, true);
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  currentTab = tab;
+  const saveable = tab && /^https?:/.test(tab.url || '');
+  saveBtn.disabled = !saveable;
+  saveTitle.textContent = saveable ? (tab.title || tab.url) : '';
 
   await loadData();
 });
@@ -38,11 +50,54 @@ async function loadData() {
     categories = await catRes.json();
     bookmarks = await bmRes.json();
     restoreSelection();
+    updateSaveBtnLabel();
     renderCategoryTree();
     renderBookmarks();
   } catch (err) {
     listEl.innerHTML = emptyHtml('加载失败');
   }
+}
+
+function updateSaveBtnLabel() {
+  if (currentCategoryId && currentCategoryId !== NO_CATEGORY) {
+    const cat = categories.find(c => c.id === currentCategoryId);
+    if (cat) {
+      saveBtn.textContent = `保存到「${cat.name}」`;
+      return;
+    }
+  }
+  saveBtn.textContent = '保存到「无分类」';
+}
+
+async function saveCurrentPage() {
+  if (!currentTab || saveBtn.disabled) return;
+  saveBtn.disabled = true;
+  const categoryIds = currentCategoryId && currentCategoryId !== NO_CATEGORY ? [currentCategoryId] : [];
+  try {
+    const res = await fetch(`${WORKER_URL}/api/bookmarks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: currentTab.url, title: currentTab.title, categoryIds })
+    });
+    if (!res.ok) throw new Error('save failed');
+    const created = await res.json();
+    bookmarks.push(created);
+    renderCategoryTree();
+    renderBookmarks();
+    flash('✓ 已保存', 'saved');
+  } catch (err) {
+    flash('✗ 保存失败', 'failed');
+  }
+}
+
+function flash(text, cls) {
+  saveBtn.textContent = text;
+  saveBtn.classList.add(cls);
+  setTimeout(() => {
+    saveBtn.classList.remove(cls);
+    updateSaveBtnLabel();
+    saveBtn.disabled = false;
+  }, 1200);
 }
 
 function restoreSelection() {
@@ -145,6 +200,7 @@ function handleTreeClick(e) {
   }
   localStorage.setItem('popupLastCategory', dataId);
 
+  updateSaveBtnLabel();
   renderCategoryTree();
   renderBookmarks();
 }

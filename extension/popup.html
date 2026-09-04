@@ -105,6 +105,47 @@
       z-index: 10;
     }
 
+    .save-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(15, 23, 42, 0.5);
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .save-title {
+      flex: 1;
+      font-size: 0.78rem;
+      color: #94a3b8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .save-btn {
+      padding: 0.35rem 0.9rem;
+      background: linear-gradient(90deg, #8b5cf6, #3b82f6);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+
+    .save-btn:hover { box-shadow: 0 0 16px rgba(139, 92, 246, 0.35); }
+    .save-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+    .save-btn.saved { background: linear-gradient(90deg, #10b981, #059669); }
+    .save-btn.failed { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
     .sidebar {
       width: 200px;
       border-right: 1px solid rgba(255, 255, 255, 0.05);
@@ -223,6 +264,11 @@
     </div>
     <button class="open-site-btn" id="open-site">打开网站</button>
     <span class="header-stats" id="stats"></span>
+  </div>
+
+  <div class="save-bar">
+    <button class="save-btn" id="save-btn">保存到「无分类」</button>
+    <span class="save-title" id="save-title"></span>
   </div>
 
   <div class="content">
