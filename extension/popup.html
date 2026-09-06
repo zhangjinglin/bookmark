@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=720, initial-scale=1.0">
+  <meta name="viewport" content="width=780, initial-scale=1.0">
   <title>书签</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,9 +10,11 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html { overflow: hidden; }
+
     body {
-      width: 720px;
-      height: 500px;
+      width: 780px;
+      height: 580px;
       font-family: 'Geist', 'Plus Jakarta Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
       background-color: #050505;
       color: #e2e8f0;
@@ -36,6 +38,15 @@
       background:
         radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
         radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+    }
+
+    .top {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: #050505;
     }
 
     .header {
@@ -150,6 +161,7 @@
       width: 200px;
       border-right: 1px solid rgba(255, 255, 255, 0.05);
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 0.5rem;
       flex-shrink: 0;
     }
@@ -157,6 +169,7 @@
     .main {
       flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 0.5rem;
     }
 
@@ -181,6 +194,16 @@
 
     .tree-node:hover { background: rgba(255, 255, 255, 0.04); color: #e2e8f0; }
     .tree-node.active { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+
+    .tree-node.sticky {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #050505;
+    }
+
+    .tree-node.sticky:hover { background: #0f0f15; }
+    .tree-node.sticky.active { background: #1a1330; color: #a78bfa; }
 
     .tree-toggle {
       width: 0.9rem;
@@ -231,6 +254,36 @@
       flex: 1;
     }
 
+    .bookmark-delete {
+      flex-shrink: 0;
+      width: 1.4rem;
+      height: 1.4rem;
+      margin-left: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 0.35rem;
+      color: #475569;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .bookmark-item:hover .bookmark-delete { opacity: 1; }
+
+    .bookmark-delete:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.12);
+    }
+
+    .bookmark-delete svg {
+      width: 0.85rem;
+      height: 0.85rem;
+    }
+
     .empty {
       display: flex;
       flex-direction: column;
@@ -253,22 +306,24 @@
 <body>
   <div class="bg-gradient"></div>
 
-  <div class="header">
-    <div class="header-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-      </svg>
+  <div class="top" id="top">
+    <div class="header">
+      <div class="header-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1>书签</h1>
+      </div>
+      <button class="open-site-btn" id="open-site">打开网站</button>
+      <span class="header-stats" id="stats"></span>
     </div>
-    <div class="header-text">
-      <h1>书签</h1>
-    </div>
-    <button class="open-site-btn" id="open-site">打开网站</button>
-    <span class="header-stats" id="stats"></span>
-  </div>
 
-  <div class="save-bar">
-    <button class="save-btn" id="save-btn">保存到「无分类」</button>
-    <span class="save-title" id="save-title"></span>
+    <div class="save-bar">
+      <button class="save-btn" id="save-btn">保存到「无分类」</button>
+      <span class="save-title" id="save-title"></span>
+    </div>
   </div>
 
   <div class="content">

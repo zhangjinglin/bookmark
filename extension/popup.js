@@ -19,6 +19,16 @@ const saveTitle = document.getElementById('save-title');
 let currentTab = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // 顶部栏脱离文档流后，让内容区向下让出顶部栏高度（用 ResizeObserver 应对字体加载等高度变化）
+  const topEl = document.getElementById('top');
+  if (topEl) {
+    const updateTopPadding = () => {
+      document.body.style.paddingTop = `${topEl.offsetHeight}px`;
+    };
+    updateTopPadding();
+    new ResizeObserver(updateTopPadding).observe(topEl);
+  }
+
   openSiteBtn.addEventListener('click', () => {
     chrome.tabs.create({ url: BOOKMARK_URL });
     window.close();
@@ -137,18 +147,19 @@ function renderCategoryTree() {
   const byParent = buildCategoryTree();
   let html = '';
 
-  html += treeNodeHtml(null, '全部', getCategoryCount(null), '', 0);
-  html += treeNodeHtml(NO_CATEGORY, '无分类', getCategoryCount(NO_CATEGORY), '', 0);
+  html += treeNodeHtml(null, '全部', getCategoryCount(null), '', 0, 'sticky');
+  html += treeNodeHtml(NO_CATEGORY, '无分类', getCategoryCount(NO_CATEGORY), '', 0, 'sticky');
   html += renderTreeLevel(byParent, null, 0);
 
   treeEl.innerHTML = html;
 }
 
-function treeNodeHtml(id, name, count, toggle, depth) {
+function treeNodeHtml(id, name, count, toggle, depth, extraClass = '') {
   const active = currentCategoryId === id ? ' active' : '';
+  const cls = ['tree-node', active, extraClass].filter(Boolean).join(' ');
   const dataId = id === null ? 'all' : (id === NO_CATEGORY ? 'none' : escapeAttr(id));
   const paddingLeft = 0.5 + depth;
-  return `<div class="tree-node${active}" data-id="${dataId}" style="padding-left:${paddingLeft}rem">
+  return `<div class="${cls}" data-id="${dataId}" style="padding-left:${paddingLeft}rem">
     <span class="tree-toggle">${toggle}</span>
     <span class="tree-name">${escapeHtml(name)}</span>
     <span class="category-count">${count}</span>
@@ -223,21 +234,44 @@ function renderBookmarks() {
   listEl.innerHTML = filtered.map(b => {
     const title = escapeHtml(b.title || b.url);
     const url = escapeAttr(b.url);
+    const id = escapeAttr(b.id);
     const favicon = getFaviconUrl(b.url);
     return `<div class="bookmark-item" data-url="${url}" title="${escapeAttr(b.title || b.url)}">
       <img class="bookmark-favicon" src="${favicon}" alt="">
       <span class="bookmark-title">${title}</span>
+      <button class="bookmark-delete" data-id="${id}" title="删除书签" aria-label="删除书签">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
     </div>`;
   }).join('');
 }
 
 function handleListClick(e) {
+  const delBtn = e.target.closest('.bookmark-delete');
+  if (delBtn) {
+    deleteBookmark(delBtn.dataset.id);
+    return;
+  }
   const item = e.target.closest('.bookmark-item');
   if (!item) return;
   const url = item.dataset.url;
   if (url) {
     chrome.tabs.create({ url });
     window.close();
+  }
+}
+
+async function deleteBookmark(id) {
+  try {
+    const res = await fetch(`${WORKER_URL}/api/bookmarks/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('delete failed');
+    bookmarks = bookmarks.filter(b => b.id !== id);
+    renderCategoryTree();
+    renderBookmarks();
+  } catch (err) {
+    flash('✗ 删除失败', 'failed');
   }
 }
 
