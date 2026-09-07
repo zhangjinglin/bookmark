@@ -15,6 +15,7 @@ const statsEl = document.getElementById('stats');
 const openSiteBtn = document.getElementById('open-site');
 const saveBtn = document.getElementById('save-btn');
 const saveTitle = document.getElementById('save-title');
+const statusEl = document.getElementById('bookmark-status');
 
 let currentTab = null;
 
@@ -63,6 +64,7 @@ async function loadData() {
     updateSaveBtnLabel();
     renderCategoryTree();
     renderBookmarks();
+    updateBookmarkStatus();
   } catch (err) {
     listEl.innerHTML = emptyHtml('加载失败');
   }
@@ -94,6 +96,7 @@ async function saveCurrentPage() {
     bookmarks.push(created);
     renderCategoryTree();
     renderBookmarks();
+    updateBookmarkStatus();
     flash('✓ 已保存', 'saved');
   } catch (err) {
     flash('✗ 保存失败', 'failed');
@@ -270,8 +273,58 @@ async function deleteBookmark(id) {
     bookmarks = bookmarks.filter(b => b.id !== id);
     renderCategoryTree();
     renderBookmarks();
+    updateBookmarkStatus();
   } catch (err) {
     flash('✗ 删除失败', 'failed');
+  }
+}
+
+// 规范化 URL：忽略 hash、去默认端口、host 小写、去尾部斜杠，便于比较是否已收藏
+function normalizeUrl(raw) {
+  try {
+    const u = new URL(raw);
+    const defaultPort =
+      (u.protocol === 'https:' && u.port === '443') ||
+      (u.protocol === 'http:' && u.port === '80');
+    const port = defaultPort ? '' : `:${u.port}`;
+    const path = u.pathname.replace(/\/+$/, '') || '/';
+    return `${u.protocol}//${u.hostname.toLowerCase()}${port}${path}${u.search}`;
+  } catch {
+    return String(raw || '').trim();
+  }
+}
+
+function updateBookmarkStatus() {
+  if (!currentTab || !/^https?:/.test(currentTab.url || '')) {
+    statusEl.textContent = '';
+    statusEl.classList.remove('bookmarked', 'not-bookmarked');
+    return;
+  }
+  const target = normalizeUrl(currentTab.url);
+  const found = bookmarks.some(b => normalizeUrl(b.url) === target);
+  if (found) {
+    // 汇总当前 URL 所有书签的分类名（去重），徽章上同时展示
+    const catNames = new Set();
+    for (const b of bookmarks) {
+      if (normalizeUrl(b.url) !== target) continue;
+      for (const cid of (b.categoryIds || [])) {
+        const cat = categories.find(c => c.id === cid);
+        if (cat) catNames.add(cat.name);
+      }
+    }
+    let label = '✓ 已收藏';
+    const names = [...catNames];
+    if (names.length > 0) {
+      label += ` · ${names.slice(0, 2).join('、')}`;
+      if (names.length > 2) label += ` 等${names.length}个分类`;
+    }
+    statusEl.textContent = label;
+    statusEl.classList.add('bookmarked');
+    statusEl.classList.remove('not-bookmarked');
+  } else {
+    statusEl.textContent = '未收藏';
+    statusEl.classList.add('not-bookmarked');
+    statusEl.classList.remove('bookmarked');
   }
 }
 

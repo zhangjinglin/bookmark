@@ -157,6 +157,34 @@
     .save-btn.saved { background: linear-gradient(90deg, #10b981, #059669); }
     .save-btn.failed { background: linear-gradient(90deg, #ef4444, #dc2626); }
 
+    .bookmark-status {
+      display: none;
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      white-space: nowrap;
+      max-width: 14rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bookmark-status.bookmarked,
+    .bookmark-status.not-bookmarked { display: inline-block; }
+
+    .bookmark-status.bookmarked {
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .bookmark-status.not-bookmarked {
+      color: #64748b;
+      background: rgba(148, 163, 184, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
     .sidebar {
       width: 200px;
       border-right: 1px solid rgba(255, 255, 255, 0.05);
@@ -322,6 +350,7 @@
 
     <div class="save-bar">
       <button class="save-btn" id="save-btn">保存到「无分类」</button>
+      <span class="bookmark-status" id="bookmark-status"></span>
       <span class="save-title" id="save-title"></span>
     </div>
   </div>
