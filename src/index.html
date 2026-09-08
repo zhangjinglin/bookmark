@@ -1300,11 +1300,16 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeCategoryModal();
+        closeBookmarkModal();
         hideContextMenu();
       }
       if (e.key === 'Enter' && !modal.classList.contains('hidden')) {
         e.preventDefault();
         saveCategory();
+      }
+      if (e.key === 'Enter' && !bookmarkModal.classList.contains('hidden')) {
+        e.preventDefault();
+        saveBookmarkEdit();
       }
     });
 
