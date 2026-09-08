@@ -222,7 +222,7 @@ export default {
       if (!body) {
         return jsonResponse({ error: 'Invalid JSON body' }, 400);
       }
-      const { categoryIds } = body;
+      const { title, url, categoryIds } = body;
 
       const bookmarks = await readList(env, 'bookmarks');
       const index = bookmarks.findIndex((b) => b.id === id);
@@ -231,6 +231,8 @@ export default {
         return jsonResponse({ error: 'Bookmark not found' }, 404);
       }
 
+      if (title !== undefined) bookmarks[index].title = title;
+      if (url !== undefined) bookmarks[index].url = url;
       if (categoryIds !== undefined) bookmarks[index].categoryIds = categoryIds;
 
       await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));

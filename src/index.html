@@ -368,6 +368,12 @@
       color: #ef4444;
     }
 
+    .context-menu-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 0.25rem 0.5rem;
+    }
+
     #context-menu-categories {
       max-height: 50vh;
       overflow-y: auto;
@@ -547,6 +553,8 @@
 
   <!-- 右键菜单 -->
   <div class="context-menu hidden" id="context-menu">
+    <div class="context-menu-item" onclick="openEditBookmarkModal()">✏️ 编辑</div>
+    <div class="context-menu-divider"></div>
     <div class="context-menu-item" style="color: #64748b; font-size: 0.75rem; cursor: default; padding: 0.5rem 1rem;">
       移动到分类
     </div>
@@ -558,6 +566,37 @@
     <div class="context-menu-item" onclick="openAddSubCategoryModal()">新建子分类</div>
     <div class="context-menu-item" onclick="openRenameCategoryModal()">重命名</div>
     <div class="context-menu-item danger" onclick="deleteCategoryFromMenu()">删除</div>
+  </div>
+
+  <!-- 书签编辑模态框 -->
+  <div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 p-4" id="bookmark-modal">
+    <div class="modal-content rounded-4xl p-6 md:p-8 w-full max-w-md">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-3xl bg-gradient-to-br from-accent-purple to-accent-blue flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-display font-semibold text-white">编辑书签</h3>
+      </div>
+      
+      <label class="block text-xs font-medium text-dark-400 mb-1.5">标题</label>
+      <input type="text" id="bookmark-title-input" placeholder="输入标题" 
+        class="w-full px-5 py-4 input-glass text-white placeholder-dark-400 focus:outline-none mb-4">
+      
+      <label class="block text-xs font-medium text-dark-400 mb-1.5">URL</label>
+      <input type="text" id="bookmark-url-input" placeholder="输入链接地址" 
+        class="w-full px-5 py-4 input-glass text-white placeholder-dark-400 focus:outline-none">
+      
+      <div class="flex gap-3 mt-6 justify-end">
+        <button class="px-6 py-3 text-sm font-medium text-dark-300 hover:text-white rounded-2xl hover:bg-dark-700 transition-all duration-300" onclick="closeBookmarkModal()">
+          取消
+        </button>
+        <button class="btn-magnetic px-6 py-3 text-sm font-medium bg-gradient-to-r from-accent-purple to-accent-blue text-white rounded-2xl hover:shadow-glow" onclick="saveBookmarkEdit()">
+          保存
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- 分类编辑模态框 -->
@@ -833,6 +872,55 @@
         loadBookmarks();
       } catch (err) {
         console.error('删除失败');
+      }
+    }
+
+    // 书签编辑模态框相关
+    const bookmarkModal = document.getElementById('bookmark-modal');
+    const bookmarkTitleInput = document.getElementById('bookmark-title-input');
+    const bookmarkUrlInput = document.getElementById('bookmark-url-input');
+    let editingBookmarkId = null;
+
+    // 打开编辑书签模态框（来自书签右键菜单）
+    function openEditBookmarkModal() {
+      const id = contextMenuBookmarkId;
+      hideContextMenu();
+      const bookmark = bookmarks.find(b => b.id === id);
+      if (!bookmark) return;
+      editingBookmarkId = id;
+      bookmarkTitleInput.value = bookmark.title || '';
+      bookmarkUrlInput.value = bookmark.url || '';
+      bookmarkModal.classList.remove('hidden');
+      bookmarkModal.classList.add('flex');
+      setTimeout(() => bookmarkTitleInput.focus(), 100);
+    }
+
+    // 关闭编辑书签模态框
+    function closeBookmarkModal() {
+      bookmarkModal.classList.add('hidden');
+      bookmarkModal.classList.remove('flex');
+      editingBookmarkId = null;
+    }
+
+    // 保存书签编辑
+    async function saveBookmarkEdit() {
+      const title = bookmarkTitleInput.value.trim();
+      const url = bookmarkUrlInput.value.trim();
+      if (!url) return alert('请输入 URL');
+
+      try {
+        const response = await fetch(`${API_BASE}/api/bookmarks/${editingBookmarkId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title || url, url }),
+        });
+        if (!response.ok) {
+          return alert('保存失败');
+        }
+        closeBookmarkModal();
+        loadBookmarks();
+      } catch (err) {
+        alert('保存失败');
       }
     }
 
