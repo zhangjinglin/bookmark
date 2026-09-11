@@ -96,6 +96,7 @@ async function saveCurrentPage() {
     bookmarks.push(created);
     renderCategoryTree();
     renderBookmarks();
+    listEl.scrollTop = 0;
     updateBookmarkStatus();
     flash('✓ 已保存', 'saved');
   } catch (err) {
@@ -217,6 +218,7 @@ function handleTreeClick(e) {
   updateSaveBtnLabel();
   renderCategoryTree();
   renderBookmarks();
+  listEl.scrollTop = 0;
 }
 
 function renderBookmarks() {
@@ -226,6 +228,13 @@ function renderBookmarks() {
   } else if (currentCategoryId) {
     filtered = bookmarks.filter(b => b.categoryIds && b.categoryIds.includes(currentCategoryId));
   }
+
+  // 新收藏排在最前，保存后无需翻页即可看到
+  filtered = filtered.slice().sort((a, b) => {
+    const ta = a.createdAt || '';
+    const tb = b.createdAt || '';
+    return ta < tb ? 1 : ta > tb ? -1 : 0;
+  });
 
   statsEl.textContent = `共 ${filtered.length} 条`;
 
