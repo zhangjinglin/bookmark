@@ -184,9 +184,15 @@ export default {
       return jsonResponse({ success: true });
     }
 
-    // 获取所有书签
+    // 获取所有书签（按创建时间倒序，新的排在前面）
     if (url.pathname === '/api/bookmarks' && request.method === 'GET') {
-      return jsonResponse(await readList(env, 'bookmarks'));
+      const bookmarks = await readList(env, 'bookmarks');
+      bookmarks.sort((a, b) => {
+        const ta = a.createdAt || '';
+        const tb = b.createdAt || '';
+        return ta < tb ? 1 : ta > tb ? -1 : 0;
+      });
+      return jsonResponse(bookmarks);
     }
 
     // 添加书签

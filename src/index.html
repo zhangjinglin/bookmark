@@ -823,6 +823,13 @@
         filtered = bookmarks.filter(b => b.categoryIds && b.categoryIds.includes(currentCategoryId));
       }
 
+      // 按创建时间倒序，新的排在前面（与扩展端保持一致）
+      filtered = filtered.slice().sort((a, b) => {
+        const ta = a.createdAt || '';
+        const tb = b.createdAt || '';
+        return ta < tb ? 1 : ta > tb ? -1 : 0;
+      });
+
       bookmarkCount.textContent = `共 ${filtered.length} 条书签`;
 
       if (filtered.length === 0) {
