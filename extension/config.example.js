@@ -8,4 +8,7 @@ export default {
   
   // 书签管理页面地址
   BOOKMARK_URL: 'https://your-domain.com',
+
+  // API 访问 Token（与 Worker 端 API_TOKEN secret 保持一致）
+  API_TOKEN: 'paste-your-token-here',
 };

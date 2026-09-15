@@ -24,7 +24,7 @@ pnpm install
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
 2. 创建 KV 命名空间：
    ```bash
-   pnpm wrangler kv:namespace create "BOOKMARKS"
+   pnpm exec wrangler kv:namespace create "BOOKMARKS"
    ```
 3. 复制返回的 KV Namespace ID
 4. 创建 `wrangler.toml` 文件（从模板复制）：
@@ -52,6 +52,25 @@ pnpm deploy
    - 点击「加载已解压的扩展程序」
    - 选择 `extension` 目录
 
+## 安全配置（API Token）
+
+除 `GET /api/health` 外，所有 `/api/*` 都需要 `Authorization: Bearer <API_TOKEN>`。
+
+```bash
+# 生成 Token
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+# 写入生产环境（交互式粘贴 Token）
+pnpm exec wrangler secret put API_TOKEN
+```
+
+本地开发用 `.dev.vars`（已 gitignore）：
+
+```
+API_TOKEN="your-token"
+```
+
+扩展的 `extension/config.js` 里同样填入 `API_TOKEN`；网页端首次访问会弹窗要求输入一次，之后保存在本机 `localStorage`。
+
 ## 文件结构
 
 ```
@@ -61,7 +80,6 @@ bookmark/
 │   └── index.html        # 前端页面
 ├── extension/
 │   ├── manifest.json     # Chrome 扩展配置
-│   ├── background.js     # 后台脚本
 │   ├── popup.html        # Popup 界面
 │   ├── popup.js          # Popup 逻辑
 │   ├── config.example.js # 配置文件模板
@@ -75,12 +93,14 @@ bookmark/
 
 | 方法 | 路径 | 功能 |
 |------|------|------|
+| GET | `/api/health` | 健康检查 |
 | GET | `/api/bookmarks` | 获取所有书签 |
 | POST | `/api/bookmarks` | 添加书签 |
 | PUT | `/api/bookmarks/:id` | 更新书签 |
 | DELETE | `/api/bookmarks/:id` | 删除书签 |
 | GET | `/api/categories` | 获取所有分类 |
 | POST | `/api/categories` | 新建分类 |
+| PUT | `/api/categories/order` | 批量更新分类顺序 |
 | PUT | `/api/categories/:id` | 编辑分类 |
 | DELETE | `/api/categories/:id` | 删除分类 |
 

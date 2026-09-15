@@ -456,6 +456,28 @@
   <!-- 噪点纹理 -->
   <div class="noise-overlay"></div>
 
+  <!-- Token 登录遮罩（无 Token 时显示） -->
+  <div id="login-overlay" class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 p-4">
+    <div class="modal-content rounded-4xl p-6 md:p-8 w-full max-w-md">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-3xl bg-gradient-to-br from-accent-purple to-accent-blue flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-display font-semibold text-white">需要验证</h3>
+      </div>
+      <p class="text-sm text-dark-300 mb-4" id="login-hint">请输入 API Token 以访问你的书签（只保存在本机浏览器）。</p>
+      <input type="password" id="login-token-input" placeholder="粘贴 API Token" onkeydown="if(event.key==='Enter')submitLogin()"
+        class="w-full px-5 py-4 input-glass text-white placeholder-dark-400 focus:outline-none">
+      <div class="flex gap-3 mt-6 justify-end">
+        <button class="btn-magnetic px-6 py-3 text-sm font-medium bg-gradient-to-r from-accent-purple to-accent-blue text-white rounded-2xl hover:shadow-glow" onclick="submitLogin()">
+          解锁
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 主容器 -->
   <div class="max-w-6xl mx-auto py-12 px-4 md:px-8 relative z-10">
     
@@ -627,6 +649,44 @@
 
   <script>
     const API_BASE = window.location.origin;
+
+    // API Token：首次访问时输入，只存本机 localStorage；所有 /api/* 请求自动携带
+    function getApiToken() { return localStorage.getItem('apiToken') || ''; }
+    const _fetch = window.fetch.bind(window);
+    window.fetch = (input, init = {}) => {
+      const rawUrl = typeof input === 'string' ? input : (input && input.url) || '';
+      const url = String(rawUrl);
+      if (url.includes('/api/')) {
+        init = { ...init, headers: { ...((init && init.headers) || {}), 'Authorization': 'Bearer ' + getApiToken() } };
+      }
+      return _fetch(input, init).then((res) => {
+        if (res.status === 401 && url.includes('/api/') && !url.includes('/api/health')) {
+          showLogin('Token 无效或已过期，请重新输入');
+        }
+        return res;
+      });
+    };
+
+    // 显示/提交登录
+    const loginOverlay = document.getElementById('login-overlay');
+    const loginTokenInput = document.getElementById('login-token-input');
+    const loginHint = document.getElementById('login-hint');
+    function showLogin(msg) {
+      if (msg) loginHint.textContent = msg;
+      loginOverlay.classList.remove('hidden');
+      loginOverlay.classList.add('flex');
+      setTimeout(() => loginTokenInput.focus(), 100);
+    }
+    function submitLogin() {
+      const token = loginTokenInput.value.trim();
+      if (!token) return;
+      localStorage.setItem('apiToken', token);
+      loginTokenInput.value = '';
+      loginOverlay.classList.add('hidden');
+      loginOverlay.classList.remove('flex');
+      loadCategories();
+      loadBookmarks();
+    }
     const listEl = document.getElementById('bookmark-list');
     const treeEl = document.getElementById('category-tree');
     const modal = document.getElementById('category-modal');
@@ -1356,9 +1416,13 @@
       });
     }
 
-    // 页面加载时初始化
-    loadCategories();
-    loadBookmarks();
+    // 页面加载时初始化（无 Token 则先登录）
+    if (!getApiToken()) {
+      showLogin();
+    } else {
+      loadCategories();
+      loadBookmarks();
+    }
     initScrollReveal();
   </script>
 </body>

@@ -1,6 +1,11 @@
 import config from './config.js';
 const WORKER_URL = config.WORKER_URL;
 const BOOKMARK_URL = config.BOOKMARK_URL;
+const API_TOKEN = config.API_TOKEN || '';
+
+function authHeaders(extra = {}) {
+  return { ...extra, 'Authorization': `Bearer ${API_TOKEN}` };
+}
 
 const NO_CATEGORY = '__none__';
 
@@ -53,10 +58,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadData() {
+  if (!API_TOKEN) {
+    listEl.innerHTML = emptyHtml('未配置 API_TOKEN');
+    return;
+  }
   try {
     const [catRes, bmRes] = await Promise.all([
-      fetch(`${WORKER_URL}/api/categories`),
-      fetch(`${WORKER_URL}/api/bookmarks`)
+      fetch(`${WORKER_URL}/api/categories`, { headers: authHeaders() }),
+      fetch(`${WORKER_URL}/api/bookmarks`, { headers: authHeaders() })
     ]);
     categories = await catRes.json();
     bookmarks = await bmRes.json();
@@ -88,7 +97,7 @@ async function saveCurrentPage() {
   try {
     const res = await fetch(`${WORKER_URL}/api/bookmarks`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ url: currentTab.url, title: currentTab.title, categoryIds })
     });
     if (!res.ok) throw new Error('save failed');
@@ -277,7 +286,7 @@ function handleListClick(e) {
 
 async function deleteBookmark(id) {
   try {
-    const res = await fetch(`${WORKER_URL}/api/bookmarks/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const res = await fetch(`${WORKER_URL}/api/bookmarks/${encodeURIComponent(id)}`, { method: 'DELETE', headers: authHeaders() });
     if (!res.ok) throw new Error('delete failed');
     bookmarks = bookmarks.filter(b => b.id !== id);
     renderCategoryTree();

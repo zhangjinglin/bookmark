@@ -9,3 +9,9 @@ extension/icons/*.js
 # 配置文件（包含敏感信息）
 extension/config.js
 wrangler.toml
+
+# 本地工具状态
+.freebuff/
+
+# API Token 明文（用完即删，不要提交）
+.api-token.txt

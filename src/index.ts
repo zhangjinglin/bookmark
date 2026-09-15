@@ -2,19 +2,38 @@ import indexHtml from './index.html';
 
 export interface Env {
   BOOKMARKS: KVNamespace;
+  API_TOKEN: string;
 }
 
-// CORS 头部
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+// 允许的前端来源（Chrome 扩展来源动态放行，不依赖固定扩展 ID）
+const ALLOWED_ORIGINS = [
+  'https://book.jiv.de5.net',
+  'https://bookmark-worker.jiv.workers.dev',
+];
 
-function jsonResponse(data: unknown, status = 200): Response {
+// 按请求 Origin 生成 CORS 头部，并放行 Authorization 请求头
+function getCorsHeaders(request: Request): Record<string, string> {
+  const origin = request.headers.get('Origin') || '';
+  const allowOrigin =
+    ALLOWED_ORIGINS.includes(origin) || origin.startsWith('chrome-extension://')
+      ? origin
+      : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    Vary: 'Origin',
+  };
+}
+
+function jsonResponse(
+  data: unknown,
+  status = 200,
+  headers: Record<string, string> = {}
+): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
 }
 
@@ -37,8 +56,11 @@ async function readList(env: Env, key: string): Promise<any[]> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const corsHeaders = getCorsHeaders(request);
+    const sendJson = (data: unknown, status = 200): Response =>
+      jsonResponse(data, status, corsHeaders);
 
-    // 处理 OPTIONS 预检请求
+    // 处理 OPTIONS 预检请求（浏览器不会在预检中带 Authorization，直接放行）
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
@@ -50,16 +72,27 @@ export default {
       });
     }
 
-    // 健康检查
+    // 健康检查（公开，方便监控）
     if (url.pathname === '/api/health') {
-      return jsonResponse({ status: 'ok', message: 'Worker is running' });
+      return sendJson({ status: 'ok', message: 'Worker is running' });
+    }
+
+    // 其余 /api/* 需要 Bearer Token（缺省 secret 时直接失败，避免误裸奔）
+    if (url.pathname.startsWith('/api/')) {
+      if (!env.API_TOKEN) {
+        return sendJson({ error: 'Server misconfigured: API_TOKEN not set' }, 500);
+      }
+      const auth = request.headers.get('Authorization') || '';
+      if (auth !== `Bearer ${env.API_TOKEN}`) {
+        return sendJson({ error: 'Unauthorized' }, 401);
+      }
     }
 
     // 获取所有分类
     if (url.pathname === '/api/categories' && request.method === 'GET') {
       const categories = await readList(env, 'categories');
       categories.sort((a, b) => a.order - b.order);
-      return jsonResponse(categories);
+      return sendJson(categories);
     }
 
     // 新建分类（支持 parentId 指定父分类）
@@ -69,12 +102,12 @@ export default {
       const parentId = body?.parentId ?? null;
 
       if (!name) {
-        return jsonResponse({ error: 'Name is required' }, 400);
+        return sendJson({ error: 'Name is required' }, 400);
       }
 
       const categories = await readList(env, 'categories');
       if (parentId !== null && !categories.some((c) => c.id === parentId)) {
-        return jsonResponse({ error: 'Parent category not found' }, 400);
+        return sendJson({ error: 'Parent category not found' }, 400);
       }
 
       const siblings = categories.filter((c) => (c.parentId ?? null) === parentId);
@@ -88,7 +121,7 @@ export default {
       categories.push(newCategory);
       await env.BOOKMARKS.put('categories', JSON.stringify(categories));
 
-      return jsonResponse(newCategory);
+      return sendJson(newCategory);
     }
 
     // 批量更新分类顺序
@@ -96,7 +129,7 @@ export default {
       const body = await parseJsonBody(request);
       const order = body?.order;
       if (!Array.isArray(order)) {
-        return jsonResponse({ error: 'order must be an array' }, 400);
+        return sendJson({ error: 'order must be an array' }, 400);
       }
       const categories = await readList(env, 'categories');
       const categoryMap = new Map(categories.map((c) => [c.id, c]));
@@ -105,7 +138,7 @@ export default {
         if (cat) cat.order = index;
       });
       await env.BOOKMARKS.put('categories', JSON.stringify(categories));
-      return jsonResponse(categories);
+      return sendJson(categories);
     }
 
     // 编辑分类（name、order、parentId）
@@ -114,7 +147,7 @@ export default {
       const id = categoryMatch[1];
       const body = await parseJsonBody(request);
       if (!body) {
-        return jsonResponse({ error: 'Invalid JSON body' }, 400);
+        return sendJson({ error: 'Invalid JSON body' }, 400);
       }
       const { name, order, parentId } = body;
 
@@ -122,21 +155,21 @@ export default {
       const index = categories.findIndex((c) => c.id === id);
 
       if (index === -1) {
-        return jsonResponse({ error: 'Category not found' }, 404);
+        return sendJson({ error: 'Category not found' }, 404);
       }
 
       if (parentId !== undefined) {
         const targetParentId = parentId ?? null;
         if (targetParentId !== null) {
           if (!categories.some((c) => c.id === targetParentId)) {
-            return jsonResponse({ error: 'Parent category not found' }, 400);
+            return sendJson({ error: 'Parent category not found' }, 400);
           }
           // 防止循环：目标父分类不能是自身或自身的后代
           let cursor: any = categories.find((c) => c.id === targetParentId);
           let guard = 0;
           while (cursor && guard < 1000) {
             if (cursor.id === id) {
-              return jsonResponse({ error: 'Cannot move category under its own descendant' }, 400);
+              return sendJson({ error: 'Cannot move category under its own descendant' }, 400);
             }
             cursor = categories.find((c) => c.id === (cursor.parentId ?? null));
             guard++;
@@ -153,7 +186,7 @@ export default {
       if (order !== undefined) categories[index].order = order;
 
       await env.BOOKMARKS.put('categories', JSON.stringify(categories));
-      return jsonResponse(categories[index]);
+      return sendJson(categories[index]);
     }
 
     // 删除分类（子分类提升到父级，同时清理书签中对该分类的引用）
@@ -181,7 +214,7 @@ export default {
         await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
       }
 
-      return jsonResponse({ success: true });
+      return sendJson({ success: true });
     }
 
     // 获取所有书签（按创建时间倒序，新的排在前面）
@@ -192,7 +225,7 @@ export default {
         const tb = b.createdAt || '';
         return ta < tb ? 1 : ta > tb ? -1 : 0;
       });
-      return jsonResponse(bookmarks);
+      return sendJson(bookmarks);
     }
 
     // 添加书签
@@ -203,7 +236,7 @@ export default {
       const categoryIds = Array.isArray(body?.categoryIds) ? body.categoryIds : [];
 
       if (!bookmarkUrl) {
-        return jsonResponse({ error: 'URL is required' }, 400);
+        return sendJson({ error: 'URL is required' }, 400);
       }
 
       const bookmarks = await readList(env, 'bookmarks');
@@ -217,7 +250,7 @@ export default {
       bookmarks.push(newBookmark);
       await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
 
-      return jsonResponse(newBookmark);
+      return sendJson(newBookmark);
     }
 
     // 更新书签（修改分类归属）
@@ -226,7 +259,7 @@ export default {
       const id = bookmarkMatch[1];
       const body = await parseJsonBody(request);
       if (!body) {
-        return jsonResponse({ error: 'Invalid JSON body' }, 400);
+        return sendJson({ error: 'Invalid JSON body' }, 400);
       }
       const { title, url, categoryIds } = body;
 
@@ -234,7 +267,7 @@ export default {
       const index = bookmarks.findIndex((b) => b.id === id);
 
       if (index === -1) {
-        return jsonResponse({ error: 'Bookmark not found' }, 404);
+        return sendJson({ error: 'Bookmark not found' }, 404);
       }
 
       if (title !== undefined) bookmarks[index].title = title;
@@ -242,7 +275,7 @@ export default {
       if (categoryIds !== undefined) bookmarks[index].categoryIds = categoryIds;
 
       await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
-      return jsonResponse(bookmarks[index]);
+      return sendJson(bookmarks[index]);
     }
 
     // 删除书签
@@ -251,10 +284,10 @@ export default {
       const bookmarks = await readList(env, 'bookmarks');
       const filtered = bookmarks.filter((b) => b.id !== id);
       await env.BOOKMARKS.put('bookmarks', JSON.stringify(filtered));
-      return jsonResponse({ success: true });
+      return sendJson({ success: true });
     }
 
     // 默认返回 404
-    return new Response('Not Found', { status: 404 });
+    return new Response('Not Found', { status: 404, headers: corsHeaders });
   },
 };
