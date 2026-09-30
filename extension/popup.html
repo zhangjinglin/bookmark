@@ -40,6 +40,33 @@
         radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
     }
 
+    .update-bar {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 1rem;
+      background: rgba(245, 158, 11, 0.12);
+      border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+      font-size: 0.72rem;
+      color: #fbbf24;
+    }
+
+    .update-bar.show { display: flex; }
+
+    .update-bar button {
+      margin-left: auto;
+      padding: 0.25rem 0.7rem;
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+      color: #451a03;
+      font-size: 0.7rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0.4rem;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
     .top {
       position: fixed;
       top: 0;
@@ -335,6 +362,10 @@
   <div class="bg-gradient"></div>
 
   <div class="top" id="top">
+    <div class="update-bar" id="update-bar">
+      <span>插件有新版本</span>
+      <button id="update-reload">点我重载</button>
+    </div>
     <div class="header">
       <div class="header-icon">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">

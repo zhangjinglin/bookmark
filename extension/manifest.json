@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bookmark Saver",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "一键保存当前页面到 Cloudflare Bookmark Worker",
   "permissions": ["activeTab"],
   "host_permissions": ["https://bookmark-worker.jiv.workers.dev/*"],

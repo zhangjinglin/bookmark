@@ -73,8 +73,10 @@ export default {
     }
 
     // 健康检查（公开，方便监控）
+    // extVersion: 扩展 bundle 版本号，仅在 extension/ 有改动时才 bump，
+    // 纯网站改动不要动它，否则插件会误报"有新版"
     if (url.pathname === '/api/health') {
-      return sendJson({ status: 'ok', message: 'Worker is running' });
+      return sendJson({ status: 'ok', message: 'Worker is running', extVersion: '1.1.0' });
     }
 
     // 其余 /api/* 需要 Bearer Token（缺省 secret 时直接失败，避免误裸奔）

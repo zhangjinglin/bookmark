@@ -3,6 +3,10 @@ const WORKER_URL = config.WORKER_URL;
 const BOOKMARK_URL = config.BOOKMARK_URL;
 const API_TOKEN = config.API_TOKEN || '';
 
+// 扩展 bundle 版本号，与 Worker /api/health 返回的 extVersion 对齐；
+// extension/ 有改动时两边一起 bump，纯网站改动不动
+const EXT_VERSION = '1.1.0';
+
 function authHeaders(extra = {}) {
   return { ...extra, 'Authorization': `Bearer ${API_TOKEN}` };
 }
@@ -42,6 +46,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   saveBtn.addEventListener('click', saveCurrentPage);
 
+  document.getElementById('update-reload').addEventListener('click', () => {
+    chrome.runtime.reload();
+  });
+  checkUpdate();
+
   treeEl.addEventListener('click', handleTreeClick);
   listEl.addEventListener('click', handleListClick);
   listEl.addEventListener('error', (e) => {
@@ -56,6 +65,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadData();
 });
+
+async function checkUpdate() {
+  try {
+    const res = await fetch(`${WORKER_URL}/api/health`);
+    const data = await res.json();
+    if (data && data.extVersion && data.extVersion !== EXT_VERSION) {
+      document.getElementById('update-bar').classList.add('show');
+    }
+  } catch {
+    // 健康检查失败就当没这功能，不 blocking 正常使用
+  }
+}
 
 async function loadData() {
   if (!API_TOKEN) {
