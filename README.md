@@ -36,7 +36,7 @@ pnpm install
 ### 3. 部署 Worker
 
 ```bash
-pnpm deploy
+pnpm run deploy
 ```
 
 ### 4. 配置 Chrome 扩展

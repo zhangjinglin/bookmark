@@ -36,7 +36,7 @@
       top: -50%; left: -50%;
       width: 200%; height: 200%;
       background:
-        radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 20% 30%, rgba(245, 158, 11, 0.12) 0%, transparent 40%),
         radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
     }
 
@@ -64,7 +64,7 @@
       width: 2rem;
       height: 2rem;
       border-radius: 0.5rem;
-      background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+      background: linear-gradient(135deg, #f59e0b, #d97706);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -74,7 +74,7 @@
     .header-icon svg {
       width: 1.1rem;
       height: 1.1rem;
-      color: white;
+      color: #451a03;
     }
 
     .header-text h1 {
@@ -86,14 +86,14 @@
 
     .header-stats {
       font-size: 0.75rem;
-      color: #64748b;
+      color: #94a3b8;
     }
 
     .open-site-btn {
       padding: 0.35rem 0.75rem;
-      background: rgba(139, 92, 246, 0.1);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      color: #a78bfa;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
       font-size: 0.72rem;
       font-weight: 500;
       border-radius: 0.5rem;
@@ -104,8 +104,8 @@
     }
 
     .open-site-btn:hover {
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.4);
+      background: rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.4);
     }
 
     .content {
@@ -139,8 +139,8 @@
 
     .save-btn {
       padding: 0.35rem 0.9rem;
-      background: linear-gradient(90deg, #8b5cf6, #3b82f6);
-      color: #fff;
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+      color: #451a03;
       font-size: 0.72rem;
       font-weight: 500;
       border: none;
@@ -152,7 +152,7 @@
       flex-shrink: 0;
     }
 
-    .save-btn:hover { box-shadow: 0 0 16px rgba(139, 92, 246, 0.35); }
+    .save-btn:hover { box-shadow: 0 0 16px rgba(0, 0, 0, 0.5); }
     .save-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
     .save-btn.saved { background: linear-gradient(90deg, #10b981, #059669); }
     .save-btn.failed { background: linear-gradient(90deg, #ef4444, #dc2626); }
@@ -180,7 +180,7 @@
     }
 
     .bookmark-status.not-bookmarked {
-      color: #64748b;
+      color: #94a3b8;
       background: rgba(148, 163, 184, 0.08);
       border: 1px solid rgba(148, 163, 184, 0.15);
     }
@@ -221,7 +221,7 @@
     }
 
     .tree-node:hover { background: rgba(255, 255, 255, 0.04); color: #e2e8f0; }
-    .tree-node.active { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+    .tree-node.active { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
 
     .tree-node.sticky {
       position: sticky;
@@ -231,7 +231,7 @@
     }
 
     .tree-node.sticky:hover { background: #0f0f15; }
-    .tree-node.sticky.active { background: #1a1330; color: #a78bfa; }
+    .tree-node.sticky.active { background: #2a2118; color: #fbbf24; }
 
     .tree-toggle {
       width: 0.9rem;
