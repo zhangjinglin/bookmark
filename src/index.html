@@ -422,19 +422,6 @@
       border-color: rgba(245, 158, 11, 0.3);
     }
 
-    /* 噪点纹理 */
-    .noise-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-      z-index: 50;
-      opacity: 0.03;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    }
-
     /* 图标样式 */
     .icon-light {
       stroke-width: 1.5;
@@ -449,9 +436,6 @@
 <body class="bg-dark-950 min-h-screen">
   <!-- 背景渐变 -->
   <div class="bg-gradient"></div>
-  
-  <!-- 噪点纹理 -->
-  <div class="noise-overlay"></div>
 
   <!-- Token 登录遮罩（无 Token 时显示） -->
   <div id="login-overlay" class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 p-4">
