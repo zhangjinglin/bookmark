@@ -5,7 +5,7 @@ const API_TOKEN = config.API_TOKEN || '';
 
 // 扩展 bundle 版本号，与 Worker /api/health 返回的 extVersion 对齐；
 // extension/ 有改动时两边一起 bump，纯网站改动不动
-const EXT_VERSION = '1.1.0';
+const EXT_VERSION = '1.2.0';
 
 function authHeaders(extra = {}) {
   return { ...extra, 'Authorization': `Bearer ${API_TOKEN}` };
@@ -16,6 +16,7 @@ const NO_CATEGORY = '__none__';
 let categories = [];
 let bookmarks = [];
 let currentCategoryId = null;
+let searchKeyword = '';
 let collapsedCategories = new Set(JSON.parse(localStorage.getItem('popupCollapsed') || '[]'));
 
 const treeEl = document.getElementById('tree');
@@ -53,6 +54,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   treeEl.addEventListener('click', handleTreeClick);
   listEl.addEventListener('click', handleListClick);
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      searchKeyword = e.target.value || '';
+      renderBookmarks();
+    });
+  }
   listEl.addEventListener('error', (e) => {
     if (e.target.tagName === 'IMG') e.target.style.display = 'none';
   }, true);
@@ -253,7 +261,10 @@ function handleTreeClick(e) {
 
 function renderBookmarks() {
   let filtered = bookmarks;
-  if (currentCategoryId === NO_CATEGORY) {
+  const keyword = searchKeyword.trim().toLowerCase();
+  if (keyword) {
+    filtered = bookmarks.filter(b => (b.title || b.url || '').toLowerCase().includes(keyword));
+  } else if (currentCategoryId === NO_CATEGORY) {
     filtered = bookmarks.filter(b => !b.categoryIds || b.categoryIds.length === 0);
   } else if (currentCategoryId) {
     filtered = bookmarks.filter(b => b.categoryIds && b.categoryIds.includes(currentCategoryId));
@@ -269,7 +280,7 @@ function renderBookmarks() {
   statsEl.textContent = `共 ${filtered.length} 条`;
 
   if (filtered.length === 0) {
-    listEl.innerHTML = emptyHtml('暂无书签');
+    listEl.innerHTML = emptyHtml(searchKeyword.trim() ? '无匹配书签' : '暂无书签');
     return;
   }
 

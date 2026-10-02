@@ -526,6 +526,16 @@
       <div class="flex-1 min-w-0 w-full scroll-reveal" style="transition-delay: 0.2s;">
         <div class="double-bezel">
           <div class="double-bezel-inner p-4 md:p-6">
+            <div class="mb-4 flex items-center gap-2">
+              <div class="relative flex-1">
+                <input type="text" id="search-input" placeholder="搜索标题..." oninput="onSearchInput(this.value)" autocomplete="off"
+                  class="w-full px-5 py-3 input-glass text-white placeholder-dark-400 focus:outline-none text-sm">
+              </div>
+              <button id="search-clear" onclick="clearSearch()" title="清空搜索"
+                class="hidden flex-shrink-0 px-4 py-3 text-sm text-dark-300 hover:text-white rounded-2xl hover:bg-dark-700 transition-all duration-300">
+                清空
+              </button>
+            </div>
             <ul class="space-y-3" id="bookmark-list">
               <li class="py-12 text-center text-dark-400 text-sm">
                 <div class="flex flex-col items-center gap-3">
@@ -680,6 +690,7 @@
     let editingCategoryId = null;
     let newCategoryParentId = null;
     let bookmarks = [];
+    let searchKeyword = '';
 
     // 特殊标识：无分类筛选
     const NO_CATEGORY = '__none__';
@@ -829,6 +840,23 @@
       renderBookmarks();
     }
 
+    // 搜索：实时过滤标题，有关键字时忽略分类搜全部
+    function onSearchInput(value) {
+      searchKeyword = value || '';
+      const clearBtn = document.getElementById('search-clear');
+      if (clearBtn) clearBtn.classList.toggle('hidden', !searchKeyword);
+      renderBookmarks();
+    }
+
+    function clearSearch() {
+      searchKeyword = '';
+      const input = document.getElementById('search-input');
+      if (input) input.value = '';
+      const clearBtn = document.getElementById('search-clear');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      renderBookmarks();
+    }
+
     // 加载书签
     async function loadBookmarks() {
       try {
@@ -857,7 +885,11 @@
     // 渲染书签列表
     function renderBookmarks() {
       let filtered = bookmarks;
-      if (currentCategoryId === NO_CATEGORY) {
+      const keyword = searchKeyword.trim().toLowerCase();
+      if (keyword) {
+        // 搜索模式：搜全部书签，只看标题，忽略左侧分类
+        filtered = bookmarks.filter(b => (b.title || b.url || '').toLowerCase().includes(keyword));
+      } else if (currentCategoryId === NO_CATEGORY) {
         filtered = bookmarks.filter(b => !b.categoryIds || b.categoryIds.length === 0);
       } else if (currentCategoryId) {
         // 只显示直接属于当前分类的书签，不含子分类
@@ -882,7 +914,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                 </svg>
               </div>
-              <span>暂无书签</span>
+              <span>${keyword ? '无匹配书签' : '暂无书签'}</span>
             </div>
           </li>
         `;

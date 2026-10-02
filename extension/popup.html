@@ -114,6 +114,28 @@
     .header-stats {
       font-size: 0.75rem;
       color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    #search-input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.35rem 0.6rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.5rem;
+      color: #e2e8f0;
+      font-size: 0.75rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    #search-input::placeholder {
+      color: #475569;
+    }
+
+    #search-input:focus {
+      border-color: rgba(245, 158, 11, 0.5);
     }
 
     .open-site-btn {
@@ -377,6 +399,7 @@
       </div>
       <button class="open-site-btn" id="open-site">打开网站</button>
       <span class="header-stats" id="stats"></span>
+      <input type="text" id="search-input" placeholder="搜索标题..." autocomplete="off">
     </div>
 
     <div class="save-bar">
