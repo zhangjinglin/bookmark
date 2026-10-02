@@ -15,3 +15,7 @@ wrangler.toml
 
 # API Token 明文（用完即删，不要提交）
 .api-token.txt
+
+# macOS（SMB 下各目录都会冒出来）
+.DS_Store
+._*
