@@ -3,6 +3,7 @@ import indexHtml from './index.html';
 export interface Env {
   BOOKMARKS: KVNamespace;
   API_TOKEN: string;
+  AI: Ai;
 }
 
 // 允许的前端来源（Chrome 扩展来源动态放行，不依赖固定扩展 ID）
@@ -53,8 +54,122 @@ async function readList(env: Env, key: string): Promise<any[]> {
   return Array.isArray(data) ? data : [];
 }
 
+// AI 标题重写用模型（中文短标题质量与 Neurons 开销的折中）
+const AI_TITLE_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+
+// 抓页面并提取可用于生成标题的文本，失败返回 null（调用方保留原标题）
+async function fetchPageExcerpt(targetUrl: string): Promise<{ originalTitle: string; excerpt: string } | null> {
+  let parsed: URL;
+  try {
+    parsed = new URL(targetUrl);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch(targetUrl, {
+      signal: ctrl.signal,
+      redirect: 'follow',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (compatible; BookmarkBot/1.0; +https://book.jiv.de5.net)',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+    });
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || '';
+    if (!/html/i.test(contentType)) return null;
+
+    let html = await res.text();
+    if (html.length > 200_000) html = html.slice(0, 200_000);
+
+    const pickMeta = (name: string): string => {
+      const re = new RegExp(
+        `<meta[^>]+(?:name|property)=["']${name}["'][^>]*>`,
+        'i'
+      );
+      const tag = html.match(re)?.[0] || '';
+      return tag.match(/content=["']([^"']{1,500})["']/i)?.[1]?.trim() || '';
+    };
+
+    const rawTitle =
+      html.match(/<title[^>]*>([\s\S]{1,300})<\/title>/i)?.[1]?.trim() || '';
+    const description =
+      pickMeta('description') || pickMeta('og:description') || '';
+    const ogTitle = pickMeta('og:title') || '';
+
+    const textOnly = html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 3000);
+
+    const excerpt = [ogTitle, description, textOnly].filter(Boolean).join('\n').slice(0, 3500);
+    if (!excerpt) return null;
+    return { originalTitle: rawTitle, excerpt };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// 清洗 AI 输出：只取第一行、去引号、截长，不合格返回空
+function sanitizeAiTitle(raw: string): string {
+  let s = String(raw || '').trim();
+  s = s.split('\n')[0]?.trim() || '';
+  s = s.replace(/^["'「『（(\[]+/, '').replace(/["'」』）)\].。:：;；!！?？.]+$/, '');
+  s = s.replace(/^(标题[：:]\s*|书签标题[：:]\s*)/, '').trim();
+  if (s.length > 30) s = s.slice(0, 30).trim();
+  return s;
+}
+
+// 后台任务：抓页面 + 调 AI + 写回 KV，全程失败只保留原标题
+async function rewriteTitleWithAi(env: Env, bookmarkId: string, bookmarkUrl: string): Promise<void> {
+  try {
+    if (!env.AI) return;
+    const page = await fetchPageExcerpt(bookmarkUrl);
+    if (!page) return;
+
+    const result: any = await env.AI.run(AI_TITLE_MODEL, {
+      messages: [
+        {
+          role: 'system',
+          content:
+            '你是书签标题助手。根据用户收藏的网页内容，生成一个一眼能看懂的简体中文短标题。要求：不超过20个汉字，只输出标题本身，不加引号、不加解释、不加前缀。',
+        },
+        {
+          role: 'user',
+          content: `网址：${bookmarkUrl}\n原标题：${page.originalTitle}\n网页内容：\n${page.excerpt}`,
+        },
+      ],
+    } as any);
+    const raw =
+      typeof result === 'string'
+        ? result
+        : result?.response || result?.result || '';
+    const title = sanitizeAiTitle(raw);
+    if (!title) return;
+
+    const bookmarks = await readList(env, 'bookmarks');
+    const index = bookmarks.findIndex((b) => b.id === bookmarkId);
+    if (index === -1) return;
+    // AI 没产出有效差异就不写回，避免无意义覆盖
+    if (!title || bookmarks[index].title === title) return;
+    bookmarks[index].title = title;
+    await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
+  } catch {
+    // 降级：保留原标题
+  }
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const corsHeaders = getCorsHeaders(request);
     const sendJson = (data: unknown, status = 200): Response =>
@@ -251,6 +366,13 @@ export default {
       };
       bookmarks.push(newBookmark);
       await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
+
+      // 秒存原文立即返回，AI 在后台重写标题（失败保留原文）
+      try {
+        ctx.waitUntil(rewriteTitleWithAi(env, newBookmark.id, bookmarkUrl));
+      } catch {
+        // waitUntil 不可用时忽略，不影响主流程
+      }
 
       return sendJson(newBookmark);
     }

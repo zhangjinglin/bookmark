@@ -11,3 +11,7 @@ rules = [{ type = "Text", globs = ["*.html"] }]
 [[kv_namespaces]]
 binding = "BOOKMARKS"
 id = "YOUR_KV_NAMESPACE_ID"
+
+# Workers AI 绑定（免费额度：每天 10,000 Neurons）
+[ai]
+binding = "AI"
