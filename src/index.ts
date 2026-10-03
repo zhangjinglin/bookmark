@@ -54,11 +54,11 @@ async function readList(env: Env, key: string): Promise<any[]> {
   return Array.isArray(data) ? data : [];
 }
 
-// AI 标题重写用模型（中文短标题质量与 Neurons 开销的折中）
-const AI_TITLE_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+// AI 标题重写用模型（中文短标题质量与 Neurons 开销的折中；llama-3.1-8b 原版已于 2026-05-30 下架，改用 FP8 量化版）
+const AI_TITLE_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
 
 // 抓页面并提取可用于生成标题的文本，失败返回 null（调用方保留原标题）
-async function fetchPageExcerpt(targetUrl: string): Promise<{ originalTitle: string; excerpt: string } | null> {
+async function fetchPageExcerpt(targetUrl: string): Promise<{ originalTitle: string; excerpt: string; bodyLen: number; descLen: number } | null> {
   let parsed: URL;
   try {
     parsed = new URL(targetUrl);
@@ -111,7 +111,7 @@ async function fetchPageExcerpt(targetUrl: string): Promise<{ originalTitle: str
 
     const excerpt = [ogTitle, description, textOnly].filter(Boolean).join('\n').slice(0, 3500);
     if (!excerpt) return null;
-    return { originalTitle: rawTitle, excerpt };
+    return { originalTitle: rawTitle, excerpt, bodyLen: textOnly.length, descLen: (ogTitle + description).length };
   } catch {
     return null;
   } finally {
@@ -119,29 +119,35 @@ async function fetchPageExcerpt(targetUrl: string): Promise<{ originalTitle: str
   }
 }
 
-// 清洗 AI 输出：只取第一行、去引号、截长，不合格返回空
+// 清洗 AI 输出：只取第一行、去引号、去首尾多余分隔符、截长，不合格返回空
 function sanitizeAiTitle(raw: string): string {
   let s = String(raw || '').trim();
   s = s.split('\n')[0]?.trim() || '';
   s = s.replace(/^["'「『（(\[]+/, '').replace(/["'」』）)\].。:：;；!！?？.]+$/, '');
   s = s.replace(/^(标题[：:]\s*|书签标题[：:]\s*)/, '').trim();
+  s = s.replace(/[\s|｜\-—–_/:：;；,，.。]+$/, '').trim();
   if (s.length > 30) s = s.slice(0, 30).trim();
+  // 模型拒绝话术（尤其成人站）绝不能当标题存
+  if (/我(无法|不能)|无法(生成|提供)|不能生成/.test(s)) return '';
   return s;
 }
 
-// 后台任务：抓页面 + 调 AI + 写回 KV，全程失败只保留原标题
-async function rewriteTitleWithAi(env: Env, bookmarkId: string, bookmarkUrl: string): Promise<void> {
-  try {
-    if (!env.AI) return;
-    const page = await fetchPageExcerpt(bookmarkUrl);
-    if (!page) return;
+// 后台任务：抓页面 + 调 AI + 写回 KV，成功返回新标题；失败抛错（调用方决定吞掉还是回显）
+async function rewriteTitleWithAi(env: Env, bookmarkId: string, bookmarkUrl: string): Promise<string | null> {
+  if (!env.AI) throw new Error('AI binding missing');
+  const page = await fetchPageExcerpt(bookmarkUrl);
+  if (!page) throw new Error('fetch excerpt failed');
+  // 正文太薄（疑似反爬/纯 JS 页）就不猜，保留原文，避免幻觉
+  if (page.bodyLen < 200 && page.descLen < 50) throw new Error('content too thin');
 
-    const result: any = await env.AI.run(AI_TITLE_MODEL, {
+  let result: any;
+  try {
+    result = await env.AI.run(AI_TITLE_MODEL, {
       messages: [
         {
           role: 'system',
           content:
-            '你是书签标题助手。根据用户收藏的网页内容，生成一个一眼能看懂的简体中文短标题。要求：不超过20个汉字，只输出标题本身，不加引号、不加解释、不加前缀。',
+            '你是书签标题助手。根据用户收藏的网页内容，生成一个一眼能看懂的简体中文短标题。要求：不超过20个汉字，只输出标题本身，不加引号、不加解释、不加前缀、不加尾巴符号。只能依据提供的网页内容和原标题改写，严禁编造品牌名、产品名；内容不足时只把原标题直译精简。',
         },
         {
           role: 'user',
@@ -149,23 +155,24 @@ async function rewriteTitleWithAi(env: Env, bookmarkId: string, bookmarkUrl: str
         },
       ],
     } as any);
-    const raw =
-      typeof result === 'string'
-        ? result
-        : result?.response || result?.result || '';
-    const title = sanitizeAiTitle(raw);
-    if (!title) return;
-
-    const bookmarks = await readList(env, 'bookmarks');
-    const index = bookmarks.findIndex((b) => b.id === bookmarkId);
-    if (index === -1) return;
-    // AI 没产出有效差异就不写回，避免无意义覆盖
-    if (!title || bookmarks[index].title === title) return;
-    bookmarks[index].title = title;
-    await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
-  } catch {
-    // 降级：保留原标题
+  } catch (e) {
+    throw new Error(`ai run failed: ${e instanceof Error ? e.message : String(e)}`.slice(0, 200));
   }
+  const raw =
+    typeof result === 'string'
+      ? result
+      : result?.response || result?.result || '';
+  const title = sanitizeAiTitle(raw);
+  if (!title) throw new Error(`ai empty response: ${JSON.stringify(result).slice(0, 200)}`);
+
+  const bookmarks = await readList(env, 'bookmarks');
+  const index = bookmarks.findIndex((b) => b.id === bookmarkId);
+  if (index === -1) throw new Error('bookmark not found');
+  // AI 没产出有效差异就不写回，避免无意义覆盖
+  if (!title || bookmarks[index].title === title) return null;
+  bookmarks[index].title = title;
+  await env.BOOKMARKS.put('bookmarks', JSON.stringify(bookmarks));
+  return title;
 }
 
 export default {
@@ -369,7 +376,12 @@ export default {
 
       // 秒存原文立即返回，AI 在后台重写标题（失败保留原文）
       try {
-        ctx.waitUntil(rewriteTitleWithAi(env, newBookmark.id, bookmarkUrl));
+        ctx.waitUntil(
+          rewriteTitleWithAi(env, newBookmark.id, bookmarkUrl).then(
+            () => {},
+            () => {}
+          )
+        );
       } catch {
         // waitUntil 不可用时忽略，不影响主流程
       }
